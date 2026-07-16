@@ -1,0 +1,7 @@
+@import "tailwindcss";
+:root {
+  --brand-navy:#152238; --brand-red:#E4413F; --brand-blue:#2B6CB0;
+  --brand-lightblue:#A9CCE8; --brand-pink:#F2B6C6; --brand-paper:#F7F5F1; --brand-ink:#1D2733;
+}
+body { background: var(--brand-paper); color: var(--brand-ink); font-family: 'Archivo', system-ui, sans-serif; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
