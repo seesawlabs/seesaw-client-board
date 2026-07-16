@@ -7,6 +7,13 @@ export const BRAND = {
 
 export const PHASES = ["Discover", "Define", "Design", "Develop", "Deploy"];
 
+export const STATUS: Record<string, { color: string; bg: string }> = {
+  "On Track": { color: BRAND.blue, bg: "#E3EEF8" },
+  "At Risk": { color: "#B7791F", bg: "#FBF0DC" },
+  Blocked: { color: BRAND.red, bg: "#FBE3E3" },
+  Wrapping: { color: "#2F855A", bg: "#E2F2E9" },
+};
+
 export const PROCESS = [
   { key: "discover", label: "Discover", blurb: "Understand the problem, domain, and whether to build", steps: [
     { id: "dsc_rampup", label: "Industry & business ramp-up", megamine: true },

@@ -122,6 +122,31 @@ export const TimeBar = ({ start, end }: { start: string; end: string }) => {
   );
 };
 
+export const ListBlock = ({
+  title,
+  items,
+  accent,
+}: {
+  title: string;
+  items: string[] | undefined;
+  accent: string;
+}) =>
+  items && items.length > 0 ? (
+    <div className="mb-3">
+      <div className="text-[11px] uppercase tracking-widest font-semibold mb-1" style={{ color: accent }}>
+        {title}
+      </div>
+      <ul className="text-sm space-y-1" style={{ color: BRAND.ink }}>
+        {items.map((t, i) => (
+          <li key={i} className="flex gap-2">
+            <span style={{ color: accent }}>—</span>
+            <span>{t}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ) : null;
+
 export const StepIcon = ({ status }: { status: Status }) => {
   const m = STATUS_META[status] || STATUS_META.todo;
   return (

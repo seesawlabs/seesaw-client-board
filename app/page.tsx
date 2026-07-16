@@ -1,3 +1,9 @@
-export default function Home() {
-  return <main className="p-10 text-2xl" style={{ fontFamily: "'Fraunces', serif" }}>SeeSaw Client Board — scaffolding.</main>;
+import { getBoard } from "@/lib/actions";
+import { Board } from "@/components/Board";
+
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const board = await getBoard();
+  return <Board initial={board} />;
 }
