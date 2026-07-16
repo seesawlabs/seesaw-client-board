@@ -2,10 +2,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Board as BoardT } from "@/lib/types";
-import { BRAND } from "@/lib/process";
+import { BRAND, ALL_STEPS } from "@/lib/process";
+import { saveStep } from "@/lib/actions";
 import { TimelineOverview } from "@/components/TimelineOverview";
 import { ClientCard } from "@/components/ClientCard";
 import { ClientEditor } from "@/components/ClientEditor";
+import { StepEditor } from "@/components/StepEditor";
 
 export function Board({ initial }: { initial: BoardT }) {
   const router = useRouter();
@@ -106,6 +108,20 @@ export function Board({ initial }: { initial: BoardT }) {
         </div>
         {/* Opportunities section added in Task 11; ResourceView + toggle in Task 12 */}
       </main>
+
+      {stepEdit && (() => {
+        const client = clients.find((c) => c.id === stepEdit.clientId);
+        const step = ALL_STEPS.find((s) => s.id === stepEdit.stepId);
+        if (!client || !step) return null;
+        return (
+          <StepEditor
+            step={step}
+            instance={client.process[step.id]}
+            onSaved={async (patch) => { await saveStep(client.id, step.id, patch); setStepEdit(null); router.refresh(); }}
+            onClose={() => setStepEdit(null)}
+          />
+        );
+      })()}
     </div>
   );
 }
