@@ -220,22 +220,27 @@ load dots) and an over/under-allocation flag.
 
 ## 6. Data model & migration
 
-State remains one JSON blob under a single storage key. **Bump the key** to
-`ssl-standup-dashboard-v2` OR keep `v1` and normalize on load — decision: keep
-the key and **normalize on load** so existing artifact data is preserved.
+State remains one JSON blob under a single storage key. **Start fresh** — no
+migration of legacy data is needed (decision, 2026-07-16: the existing prototype
+data is disposable). Bump the key to **`ssl-client-board-v2`** and seed with new
+example clients that use the full shape below. The old `v1` key is simply
+abandoned.
 
-**`normalizeClient(c)`** runs on every load and makes any client whole:
+**`normalizeClient(c)`** still runs on every load — not for legacy migration, but
+for **forward-compat robustness**: a client saved before a later template/field
+change must render without crashing. It makes any client whole:
 - Back-fill missing deal fields with sane defaults (`billing: "billable"`,
-  `opportunity: { types: [], note: "" }`, `contractValue: null`, `buildUrl: ""`).
-- Convert legacy `team: string[]` → `assignments: [{ name, role: "", load: "core" }]`.
+  `opportunity: { types: [], note: "" }`, `contractValue: null`, `buildUrl: ""`,
+  `assignments: []`).
 - Ensure `entryPoint` (default `{ mode: "greenfield", atStep: null }`).
-- Build `process` from the template if absent. Inference from existing `phase`:
-  steps in phases *before* the current phase → `done`; steps in the current
-  phase → first `doing`, rest `todo`; later phases → `todo`. A sensible first
-  guess the team corrects. Never drop unknown keys already present.
+- Ensure a `process` entry exists for every template step id; any step absent
+  from a client's `process` renders as `todo`. Never drop unknown keys already
+  present.
 
 Because `process` is keyed by step id, editing the template later (add/rename/
-reorder steps) is non-destructive.
+reorder steps) is non-destructive. New seed clients set `process` explicitly per
+their `entryPoint` (greenfield → all `todo`; mid-build example → pre-`validated`
+steps before the entry step) to demo both flows.
 
 ---
 
