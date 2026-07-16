@@ -7,6 +7,8 @@ export const BRAND = {
 
 export const PHASES = ["Discover", "Define", "Design", "Develop", "Deploy"];
 
+export const OPP_STAGES = ["Lead", "Scoping", "Proposal", "Verbal", "On Hold"];
+
 export const STATUS: Record<string, { color: string; bg: string }> = {
   "On Track": { color: BRAND.blue, bg: "#E3EEF8" },
   "At Risk": { color: "#B7791F", bg: "#FBF0DC" },

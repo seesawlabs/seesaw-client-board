@@ -8,13 +8,16 @@ import { TimelineOverview } from "@/components/TimelineOverview";
 import { ClientCard } from "@/components/ClientCard";
 import { ClientEditor } from "@/components/ClientEditor";
 import { StepEditor } from "@/components/StepEditor";
+import { OppEditor } from "@/components/OppEditor";
+import { Chip } from "@/components/ui";
 
 export function Board({ initial }: { initial: BoardT }) {
   const router = useRouter();
   const [view, setView] = useState<"client" | "resource">("client");
   const [editingClient, setEditingClient] = useState<string | null>(null); // id | "new" | null
   const [stepEdit, setStepEdit] = useState<{ clientId: string; stepId: string } | null>(null);
-  const { clients } = initial;
+  const [editingOpp, setEditingOpp] = useState<string | null>(null); // id | "new" | null
+  const { clients, opportunities } = initial;
 
   const atRisk = clients.filter((c) => c.status === "At Risk" || c.status === "Blocked").length;
   const openAsks = clients.reduce((n, c) => n + (c.needs?.length || 0), 0);
@@ -106,7 +109,82 @@ export function Board({ initial }: { initial: BoardT }) {
             )
           )}
         </div>
-        {/* Opportunities section added in Task 11; ResourceView + toggle in Task 12 */}
+        <div className="flex items-baseline justify-between mb-1">
+          <h2 className="text-2xl" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
+            Potential new opportunities
+          </h2>
+          <button
+            onClick={() => setEditingOpp("new")}
+            className="px-4 py-2 rounded-md text-sm font-semibold"
+            style={{ background: BRAND.pink, color: "#7A2440" }}
+          >
+            + Add opportunity
+          </button>
+        </div>
+        <p className="text-sm mb-4" style={{ color: "#66707F" }}>
+          Got experience in one of these industries? Flag it before the pitch — reply in standup or ping the contact.
+        </p>
+
+        {editingOpp === "new" && (
+          <div className="mb-5">
+            <OppEditor
+              onSaved={() => { setEditingOpp(null); router.refresh(); }}
+              onCancel={() => setEditingOpp(null)}
+            />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-16">
+          {opportunities.length === 0 && editingOpp !== "new" && (
+            <div className="md:col-span-2 p-8 rounded-lg border border-dashed text-center text-sm" style={{ borderColor: "#C8CFDA", color: "#66707F" }}>
+              Nothing in the pipeline view yet.
+            </div>
+          )}
+          {opportunities.map((o) =>
+            editingOpp === o.id ? (
+              <div key={o.id} className="md:col-span-2">
+                <OppEditor
+                  initial={o}
+                  onSaved={() => { setEditingOpp(null); router.refresh(); }}
+                  onCancel={() => setEditingOpp(null)}
+                />
+              </div>
+            ) : (
+              <div key={o.id} className="rounded-lg border bg-white p-5" style={{ borderColor: "#E2E6ED" }}>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-lg" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
+                    {o.name}
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0" style={{ background: "#EEF1F6", color: BRAND.navy }}>
+                    {o.stage}
+                  </span>
+                </div>
+                <div className="mt-1.5">
+                  {o.industry && <Chip tone="blue">{o.industry}</Chip>}
+                  {o.contact && <Chip tone="navy">{o.contact}</Chip>}
+                </div>
+                {o.notes && <p className="text-sm mt-2" style={{ color: "#4A5568" }}>{o.notes}</p>}
+                {o.expertiseAsk && (
+                  <div className="mt-3 p-3 rounded-md text-sm" style={{ background: "#FBEBF0", color: "#7A2440" }}>
+                    <span className="font-semibold">Team ask: </span>
+                    {o.expertiseAsk}
+                  </div>
+                )}
+                <div className="flex items-center mt-3">
+                  <button onClick={() => setEditingOpp(o.id)} className="text-sm font-medium" style={{ color: "#66707F" }}>
+                    Edit
+                  </button>
+                  {o.updatedAt && (
+                    <span className="ml-auto text-[11px]" style={{ color: "#8A93A3" }}>
+                      Updated {new Date(o.updatedAt).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          )}
+        </div>
+        {/* ResourceView + toggle in Task 12 */}
       </main>
 
       {stepEdit && (() => {
