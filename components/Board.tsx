@@ -5,6 +5,7 @@ import type { Board as BoardT } from "@/lib/types";
 import { BRAND, ALL_STEPS } from "@/lib/process";
 import { saveStep } from "@/lib/actions";
 import { TimelineOverview } from "@/components/TimelineOverview";
+import { ResourceView } from "@/components/ResourceView";
 import { ClientCard } from "@/components/ClientCard";
 import { ClientEditor } from "@/components/ClientEditor";
 import { StepEditor } from "@/components/StepEditor";
@@ -48,6 +49,14 @@ export function Board({ initial }: { initial: BoardT }) {
             <div>
               <span className="text-white font-semibold">{openAsks}</span> open asks
             </div>
+            <div className="flex rounded-md overflow-hidden border" style={{ borderColor: BRAND.lightBlue }}>
+              {([["client", "By client"], ["resource", "By resource"]] as const).map(([id, label]) => (
+                <button key={id} onClick={() => setView(id)} className="px-3 py-1.5 text-xs font-semibold"
+                  style={{ background: view === id ? "#fff" : "transparent", color: view === id ? BRAND.navy : "#fff" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
             <button
               onClick={() => router.refresh()}
               className="px-3 py-1.5 rounded-md text-xs font-semibold border"
@@ -61,6 +70,15 @@ export function Board({ initial }: { initial: BoardT }) {
       </header>
 
       <main className="max-w-5xl mx-auto px-6 md:px-10 py-8">
+        {view === "resource" ? (
+          <>
+            <h2 className="text-2xl mb-4" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
+              Team allocation
+            </h2>
+            <ResourceView clients={clients} />
+          </>
+        ) : (
+          <>
         <h2 className="text-2xl mb-4" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
           Engagement calendar
         </h2>
@@ -184,7 +202,8 @@ export function Board({ initial }: { initial: BoardT }) {
             )
           )}
         </div>
-        {/* ResourceView + toggle in Task 12 */}
+          </>
+        )}
       </main>
 
       {stepEdit && (() => {
