@@ -1,10 +1,19 @@
 "use client";
 import { useState } from "react";
-import { BRAND, STATUS, BILLING, OPP_TYPES, contractLabel, clientProgress } from "@/lib/process";
+import { BRAND, STATUS, BILLING, OPP_TYPES, contractLabel, clientProgress, skippedItems } from "@/lib/process";
 import type { Client } from "@/lib/types";
 import { Chip, PhaseTracker, TimeBar, ListBlock } from "@/components/ui";
+import { ProcessSection } from "@/components/ProcessSection";
 
-export function ClientCard({ client: c, onEdit }: { client: Client; onEdit: () => void }) {
+export function ClientCard({
+  client: c,
+  onEdit,
+  onStep,
+}: {
+  client: Client;
+  onEdit: () => void;
+  onStep: (stepId: string) => void;
+}) {
   const [open, setOpen] = useState(false);
   const st = STATUS[c.status] || STATUS["On Track"];
   const progress = clientProgress(c);
@@ -99,26 +108,49 @@ export function ClientCard({ client: c, onEdit }: { client: Client; onEdit: () =
         </div>
 
         {open && (
-          <div className="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-3 gap-x-6" style={{ borderColor: "#EDF0F4" }}>
-            <ListBlock title="Risks" items={c.risks} accent={BRAND.red} />
-            <ListBlock title="Needs / asks" items={c.needs} accent="#B7791F" />
-            <ListBlock title="Key findings" items={c.findings} accent={BRAND.blue} />
-            {c.links && c.links.length > 0 && (
-              <div className="md:col-span-3 mt-1">
-                {c.links.map((l, i) => (
-                  <a
-                    key={i}
-                    href={l.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-block mr-3 text-sm font-semibold underline"
-                    style={{ color: BRAND.blue }}
-                  >
-                    {l.label} ↗
-                  </a>
-                ))}
-              </div>
-            )}
+          <div className="mt-4 pt-4 border-t" style={{ borderColor: "#EDF0F4" }}>
+            <div className="text-[11px] uppercase tracking-widest font-semibold mb-2" style={{ color: "#66707F" }}>
+              5D Process
+            </div>
+            <ProcessSection client={c} onStep={onStep} />
+            {(() => {
+              const items = skippedItems(c);
+              if (!items.length) return null;
+              return (
+                <div className="mt-3 p-3 rounded-md" style={{ background: "#FBF7F0", border: "1px solid #F0E6D6" }}>
+                  <div className="text-[11px] uppercase tracking-widest font-semibold mb-1" style={{ color: "#B7791F" }}>Deliberately skipped / not applicable</div>
+                  <ul className="text-sm space-y-1" style={{ color: BRAND.ink }}>
+                    {items.map((it) => (
+                      <li key={it.id} className="flex gap-2">
+                        <span style={{ color: "#B7791F" }}>{it.status === "skipped" ? "⊘" : "—"}</span>
+                        <span><span className="font-semibold">{it.stepLabel}</span> <span style={{ color: "#8A93A3" }}>({it.phaseLabel})</span>{it.note ? ` — ${it.note}` : ""}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-x-6">
+              <ListBlock title="Risks" items={c.risks} accent={BRAND.red} />
+              <ListBlock title="Needs / asks" items={c.needs} accent="#B7791F" />
+              <ListBlock title="Key findings" items={c.findings} accent={BRAND.blue} />
+              {c.links && c.links.length > 0 && (
+                <div className="md:col-span-3 mt-1">
+                  {c.links.map((l, i) => (
+                    <a
+                      key={i}
+                      href={l.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-block mr-3 text-sm font-semibold underline"
+                      style={{ color: BRAND.blue }}
+                    >
+                      {l.label} ↗
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

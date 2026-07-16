@@ -80,7 +80,12 @@ export function Board({ initial }: { initial: BoardT }) {
             </div>
           )}
           {clients.map((c) => (
-            <ClientCard key={c.id} client={c} onEdit={() => setEditingClient(c.id)} />
+            <ClientCard
+              key={c.id}
+              client={c}
+              onEdit={() => setEditingClient(c.id)}
+              onStep={(stepId) => setStepEdit({ clientId: c.id, stepId })}
+            />
           ))}
         </div>
         {/* Opportunities section added in Task 11; ClientEditor wired in Task 9; ResourceView + toggle in Task 12 */}
