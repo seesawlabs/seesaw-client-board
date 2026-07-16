@@ -5,6 +5,7 @@ import type { Board as BoardT } from "@/lib/types";
 import { BRAND } from "@/lib/process";
 import { TimelineOverview } from "@/components/TimelineOverview";
 import { ClientCard } from "@/components/ClientCard";
+import { ClientEditor } from "@/components/ClientEditor";
 
 export function Board({ initial }: { initial: BoardT }) {
   const router = useRouter();
@@ -74,21 +75,36 @@ export function Board({ initial }: { initial: BoardT }) {
         </div>
 
         <div className="space-y-4 mb-12">
+          {editingClient === "new" && (
+            <ClientEditor
+              onSaved={() => { setEditingClient(null); router.refresh(); }}
+              onCancel={() => setEditingClient(null)}
+            />
+          )}
           {clients.length === 0 && (
             <div className="p-8 rounded-lg border border-dashed text-center text-sm" style={{ borderColor: "#C8CFDA", color: "#66707F" }}>
               No active engagements yet. Add your first client to get the board going.
             </div>
           )}
-          {clients.map((c) => (
-            <ClientCard
-              key={c.id}
-              client={c}
-              onEdit={() => setEditingClient(c.id)}
-              onStep={(stepId) => setStepEdit({ clientId: c.id, stepId })}
-            />
-          ))}
+          {clients.map((c) =>
+            editingClient === c.id ? (
+              <ClientEditor
+                key={c.id}
+                initial={c}
+                onSaved={() => { setEditingClient(null); router.refresh(); }}
+                onCancel={() => setEditingClient(null)}
+              />
+            ) : (
+              <ClientCard
+                key={c.id}
+                client={c}
+                onEdit={() => setEditingClient(c.id)}
+                onStep={(stepId) => setStepEdit({ clientId: c.id, stepId })}
+              />
+            )
+          )}
         </div>
-        {/* Opportunities section added in Task 11; ClientEditor wired in Task 9; ResourceView + toggle in Task 12 */}
+        {/* Opportunities section added in Task 11; ResourceView + toggle in Task 12 */}
       </main>
     </div>
   );
