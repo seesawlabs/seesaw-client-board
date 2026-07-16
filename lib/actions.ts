@@ -9,7 +9,7 @@ import type { Board, Client, Opportunity, StepInstance } from "@/lib/types";
 export async function getBoard(): Promise<Board> {
   const [cRows, oRows] = await Promise.all([db.select().from(clients), db.select().from(opportunities)]);
   const cs = cRows
-    .map((r) => normalizeClient(r as unknown as Partial<Client>))
+    .map((r) => normalizeClient({ ...r, updatedAt: r.updatedAt ? r.updatedAt.getTime() : undefined } as unknown as Partial<Client>))
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   const os = oRows.map((o) => ({
     id: o.id, name: o.name, industry: o.industry, stage: o.stage,
