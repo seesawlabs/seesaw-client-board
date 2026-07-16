@@ -128,3 +128,48 @@ export function normalizeClient(c: Partial<Client> & { name?: string }): Client 
     updatedAt: c.updatedAt || Date.now(),
   };
 }
+
+export function phaseRollup(client: Client, phaseKey: string) {
+  const phase = PROCESS.find((p) => p.key === phaseKey);
+  const steps = phase ? phase.steps : [];
+  let done = 0, skipped = 0, na = 0;
+  steps.forEach((s) => {
+    const st = client.process?.[s.id]?.status || "todo";
+    if (st === "skipped") skipped++;
+    else if (st === "na") na++;
+    else if (STATUS_META[st]?.complete) done++;
+  });
+  const applicable = steps.length - skipped - na;
+  return { done, skipped, na, applicable, total: steps.length, complete: done === applicable };
+}
+
+export function clientProgress(client: Client) {
+  let done = 0, applicable = 0;
+  ALL_STEPS.forEach((s) => {
+    const st = client.process?.[s.id]?.status || "todo";
+    if (st === "skipped" || st === "na") return;
+    applicable++;
+    if (STATUS_META[st]?.complete) done++;
+  });
+  return { done, applicable, pct: applicable === 0 ? 0 : Math.round((done / applicable) * 100) };
+}
+
+export function skippedItems(client: Client) {
+  return ALL_STEPS.filter((s) => { const st = client.process?.[s.id]?.status; return st === "skipped" || st === "na"; })
+    .map((s) => ({ id: s.id, phaseLabel: s.phaseLabel, stepLabel: s.label, status: client.process[s.id].status, note: client.process[s.id].note || "" }));
+}
+
+export const CAPACITY = 5;
+export function resourceRows(clients: Client[]) {
+  const byName = new Map<string, { name: string; weight: number; assignments: { client: string; role: string; load: string; phase: string; status: string }[] }>();
+  clients.forEach((c) => {
+    (c.assignments || []).forEach((a) => {
+      if (!a.name) return;
+      if (!byName.has(a.name)) byName.set(a.name, { name: a.name, weight: 0, assignments: [] });
+      const row = byName.get(a.name)!;
+      row.weight += loadWeight(a.load);
+      row.assignments.push({ client: c.name, role: a.role || "", load: a.load || "core", phase: c.phase, status: c.status });
+    });
+  });
+  return [...byName.values()].map((r) => ({ ...r, over: r.weight > CAPACITY })).sort((a, b) => b.weight - a.weight);
+}
