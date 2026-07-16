@@ -14,6 +14,7 @@ export async function getBoard(): Promise<Board> {
   const os = oRows.map((o) => ({
     id: o.id, name: o.name, industry: o.industry, stage: o.stage,
     contact: o.contact, notes: o.notes, expertiseAsk: o.expertiseAsk,
+    updatedAt: o.updatedAt ? o.updatedAt.getTime() : undefined,
   })) as Opportunity[];
   return { clients: cs, opportunities: os };
 }
