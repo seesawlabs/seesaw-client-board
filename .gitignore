@@ -1,3 +1,9 @@
 node_modules/
 .DS_Store
 *.log
+.next/
+.env
+.env*.local
+next-env.d.ts
+.vercel
+*.tsbuildinfo
