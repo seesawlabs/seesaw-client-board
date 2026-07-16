@@ -32,23 +32,31 @@ export function OppEditor({
   const submit = async () => {
     if (!f.name.trim() || busy) return;
     setBusy(true);
-    await upsertOpportunity({
-      id: initial?.id,
-      name: f.name.trim(),
-      industry: f.industry,
-      stage: f.stage,
-      contact: f.contact,
-      notes: f.notes,
-      expertiseAsk: f.expertiseAsk,
-    });
-    onSaved();
+    try {
+      await upsertOpportunity({
+        id: initial?.id,
+        name: f.name.trim(),
+        industry: f.industry,
+        stage: f.stage,
+        contact: f.contact,
+        notes: f.notes,
+        expertiseAsk: f.expertiseAsk,
+      });
+      onSaved();
+    } catch {
+      setBusy(false);
+    }
   };
 
   const remove = async () => {
     if (initial && !busy) {
       setBusy(true);
-      await deleteOpportunity(initial.id);
-      onSaved();
+      try {
+        await deleteOpportunity(initial.id);
+        onSaved();
+      } catch {
+        setBusy(false);
+      }
     }
   };
 

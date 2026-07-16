@@ -26,11 +26,11 @@ export async function upsertClient(input: Partial<Client>): Promise<void> {
     billing: c.billing, contractValue: c.contractValue, buildUrl: c.buildUrl,
     opportunity: c.opportunity, assignments: c.assignments,
     risks: c.risks, needs: c.needs, findings: c.findings, links: c.links,
-    entryPoint: c.entryPoint, process: c.process, updatedAt: new Date(),
+    entryPoint: c.entryPoint, updatedAt: new Date(),
   };
   const existing = input.id ? await db.select({ id: clients.id }).from(clients).where(eq(clients.id, input.id)) : [];
   if (existing.length) await db.update(clients).set(row).where(eq(clients.id, input.id!));
-  else await db.insert(clients).values(row);
+  else await db.insert(clients).values({ ...row, process: c.process });
   revalidatePath("/");
 }
 

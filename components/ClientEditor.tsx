@@ -63,42 +63,50 @@ export function ClientEditor({
   const submit = async () => {
     if (!f.name.trim() || busy) return;
     setBusy(true);
-    await upsertClient({
-      id: initial?.id,
-      name: f.name.trim(),
-      summary: f.summary.trim(),
-      start: f.start,
-      end: f.end,
-      phase: f.phase,
-      status: f.status,
-      billing: f.billing as Client["billing"],
-      opportunity: { types: f.oppTypes, note: f.oppNote.trim() },
-      contractValue: f.contractValue === "" ? null : Number(f.contractValue),
-      buildUrl: f.buildUrl.trim(),
-      assignments: f.assignments
-        .map((a) => ({ name: a.name.trim(), role: a.role.trim(), load: a.load }))
-        .filter((a) => a.name),
-      entryPoint: {
-        mode: f.entryMode as Client["entryPoint"]["mode"],
-        atStep: f.entryMode === "mid-build" ? f.entryStep || null : null,
-      },
-      risks: lines(f.risks),
-      needs: lines(f.needs),
-      findings: lines(f.findings),
-      links: lines(f.links).map((l) => {
-        const [label, url] = l.split("|").map((x) => x.trim());
-        return { label: label || url, url: url || label };
-      }),
-      process: initial?.process,
-    });
-    onSaved();
+    try {
+      await upsertClient({
+        id: initial?.id,
+        name: f.name.trim(),
+        summary: f.summary.trim(),
+        start: f.start,
+        end: f.end,
+        phase: f.phase,
+        status: f.status,
+        billing: f.billing as Client["billing"],
+        opportunity: { types: f.oppTypes, note: f.oppNote.trim() },
+        contractValue: f.contractValue === "" ? null : Math.round(Number(f.contractValue)),
+        buildUrl: f.buildUrl.trim(),
+        assignments: f.assignments
+          .map((a) => ({ name: a.name.trim(), role: a.role.trim(), load: a.load }))
+          .filter((a) => a.name),
+        entryPoint: {
+          mode: f.entryMode as Client["entryPoint"]["mode"],
+          atStep: f.entryMode === "mid-build" ? f.entryStep || null : null,
+        },
+        risks: lines(f.risks),
+        needs: lines(f.needs),
+        findings: lines(f.findings),
+        links: lines(f.links).map((l) => {
+          const [label, url] = l.split("|").map((x) => x.trim());
+          return { label: label || url, url: url || label };
+        }),
+        process: initial?.process,
+      });
+      onSaved();
+    } catch {
+      setBusy(false);
+    }
   };
 
   const remove = async () => {
     if (initial && !busy) {
       setBusy(true);
-      await deleteClient(initial.id);
-      onSaved();
+      try {
+        await deleteClient(initial.id);
+        onSaved();
+      } catch {
+        setBusy(false);
+      }
     }
   };
 
