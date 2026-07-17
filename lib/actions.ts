@@ -4,7 +4,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { clients, opportunities } from "@/lib/db/schema";
 import { normalizeClient } from "@/lib/process";
-import type { Board, Client, Opportunity, StepInstance } from "@/lib/types";
+import { listActivity, undoActivity, undoTurn } from "@/lib/assistant/activity";
+import type { Activity, Board, Client, Opportunity, StepInstance } from "@/lib/types";
 
 export async function getBoard(): Promise<Board> {
   const [cRows, oRows] = await Promise.all([db.select().from(clients), db.select().from(opportunities)]);
@@ -61,5 +62,19 @@ export async function upsertOpportunity(input: Partial<Opportunity>): Promise<vo
 
 export async function deleteOpportunity(id: string): Promise<void> {
   await db.delete(opportunities).where(eq(opportunities.id, id));
+  revalidatePath("/");
+}
+
+export async function listActivityAction(): Promise<Activity[]> {
+  return listActivity();
+}
+
+export async function undoActivityAction(id: string): Promise<void> {
+  await undoActivity(id);
+  revalidatePath("/");
+}
+
+export async function undoTurnAction(turnId: string): Promise<void> {
+  await undoTurn(turnId);
   revalidatePath("/");
 }
