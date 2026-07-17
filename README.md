@@ -41,6 +41,36 @@ npm run check     # tsc --noEmit
 npm run build     # production build
 ```
 
+## AI Assistant
+
+A chat panel lets you talk to the board instead of clicking through it.
+Paste a message, a call transcript, or a public URL — the assistant infers
+which client(s) you mean, then proposes and applies updates (phase/status
+changes, notes, risks, new clients or opportunities) via the same validated
+server actions the UI uses. Every change it makes lands in an **activity
+feed** grouped by turn, each entry showing a before/after summary with a
+per-entry **Undo** and a per-turn **Undo all**.
+
+- **Route:** `app/api/assistant/route.ts` — a streaming `POST` handler built
+  on the Vercel AI SDK v6 (`streamText` + tool-calling, capped at 12 steps
+  per turn). The model is `anthropic/claude-sonnet-5`, called through the
+  **Vercel AI Gateway**. Auth is via **Vercel OIDC** — no API key needed
+  locally or in prod, just a valid `VERCEL_OIDC_TOKEN`.
+- **Tool whitelist:** the agent can only call the tools defined in
+  [`lib/assistant/tools.ts`](lib/assistant/tools.ts) (`queryBoard`,
+  `upsertClient`, `setStep`, `upsertOpportunity`, `readLink`,
+  `deleteClient`). Each mutating tool wraps an existing `lib/actions.ts`
+  server action — the agent never touches the DB directly — and records a
+  before-image so the change can be undone. Destructive actions (delete)
+  require an explicit `confirmed: true` from the model after the user
+  confirms.
+- **Link ingestion:** paste a public URL and ask the assistant to use it;
+  `readLink` (`lib/assistant/link.ts`) fetches and extracts readable text
+  for the model to act on (e.g. add a finding).
+- **Persistence:** two new tables — `activity` (one row per tool call:
+  turn id, actor, tool, entity, before-image, undone flag) and `messages`
+  (chat history, keyed by turn id) — back the feed and conversation replay.
+
 ## Deploy
 
 Pushes to `main` auto-deploy to production via Vercel; pull requests get

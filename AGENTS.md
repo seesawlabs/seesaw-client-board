@@ -22,3 +22,11 @@ deployment protection**. It tracks each client engagement against SSL's canonica
 - DB schema in `lib/db/schema.ts`; server actions in `lib/actions.ts`.
 - `npm run dev` for local; `npm run check`/`npm run build` before pushing.
 - Data is confidential (contract values, client context) — see spec §8.
+- **AI assistant** lives in `lib/assistant/`: `tools.ts` is the agent's
+  **only** whitelisted mutation surface (it wraps `lib/actions.ts` — never
+  edit the DB from the agent path directly); `activity.ts` records
+  before-images and drives undo; `resolve.ts`/`context.ts` handle client
+  inference and system-prompt/board context; `link.ts` fetches
+  user-pasted URLs. The route is `app/api/assistant/route.ts`. The `ai`
+  package is pinned to **v6** (`^6.0.230`) — do not upgrade to v7 without
+  a deliberate migration; APIs differ.
