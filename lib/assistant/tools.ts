@@ -97,6 +97,11 @@ export function buildTools(turnId: string) {
         return "ok";
       },
     }),
+    readLink: tool({
+      description: "Fetch a URL the user pasted and return its readable text so you can act on it.",
+      inputSchema: z.object({ url: z.string().url() }),
+      execute: async ({ url }) => (await import("./link")).fetchLinkText(url),
+    }),
     deleteClient: tool({
       description: "Delete a client. DESTRUCTIVE — only call with confirmed:true after the user explicitly confirms.",
       inputSchema: z.object({ id: z.string(), confirmed: z.boolean() }),
