@@ -15,9 +15,8 @@ export async function POST(req: Request) {
   const system = buildAssistantContext(board);
 
   const last = messages[messages.length - 1];
-  if (last?.role === "user") {
-    await appendMessage({ turnId, role: "user", content: extractText(last) });
-  }
+  const lastText = last?.role === "user" ? extractText(last) : "";
+  if (lastText.trim()) await appendMessage({ turnId, role: "user", content: lastText });
 
   const result = streamText({
     model: "anthropic/claude-sonnet-5", // Vercel AI Gateway; confirmed via `curl https://ai-gateway.vercel.sh/v1/models`
