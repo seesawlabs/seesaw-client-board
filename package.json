@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/calvinlocklear1205/seesaw-client-board#readme",
   "dependencies": {
+    "@ai-sdk/react": "^3.0.232",
     "@neondatabase/serverless": "^1.1.0",
     "ai": "^6.0.230",
     "drizzle-orm": "^0.45.2",
