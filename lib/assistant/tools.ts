@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getBoard, upsertClient, saveStep, deleteClient, upsertOpportunity } from "@/lib/actions";
 import { snapshotClient, snapshotOpportunity, recordActivity } from "./activity";
 import { resolveClient } from "./resolve";
-import type { Client, Opportunity, StepInstance } from "@/lib/types";
+import type { Client, Opportunity } from "@/lib/types";
 
 /**
  * The whitelisted tool layer the AI assistant uses to read/mutate the board.
@@ -40,19 +40,17 @@ export function buildTools(turnId: string) {
         const merged: Partial<Client> = id
           ? { ...(before as unknown as Partial<Client>), ...patch, id }
           : (patch as Partial<Client>);
-        await upsertClient(merged);
-        const board = await getBoard();
-        const saved = board.clients.find((c) => (id ? c.id === id : c.name === (patch as { name?: string }).name));
+        const savedId = await upsertClient(merged as any);
         await recordActivity({
           turnId,
           actor: "agent",
           tool: "upsertClient",
           entity: "client",
-          entityId: saved?.id ?? id ?? null,
+          entityId: savedId,
           beforeImage: before,
-          summary: id ? `Updated ${saved?.name ?? "client"}` : `Created ${(patch as { name?: string }).name}`,
+          summary: id ? `Updated ${(patch as any).name ?? "client"}` : `Created ${(patch as any).name}`,
         });
-        return `ok: ${id ? "updated" : "created"} ${saved?.name ?? (patch as { name?: string }).name}`;
+        return `ok: ${id ? "updated" : "created"} ${(patch as { name?: string }).name}`;
       },
     }),
     setStep: tool({
@@ -68,8 +66,7 @@ export function buildTools(turnId: string) {
       execute: async ({ clientId, stepId, status, note, decisions }) => {
         if (status === "skipped" && !note?.trim()) return "error: skipped requires a note (the why)";
         const before = await snapshotClient(clientId);
-        const patch: Partial<StepInstance> = { status, note: note ?? "", ...(decisions ? { decisions } : {}) };
-        await saveStep(clientId, stepId, patch);
+        await saveStep(clientId, stepId, { status, ...(note !== undefined ? { note } : {}), ...(decisions ? { decisions } : {}) } as any);
         await recordActivity({
           turnId,
           actor: "agent",
@@ -87,14 +84,13 @@ export function buildTools(turnId: string) {
       inputSchema: z.object({ id: z.string().optional(), patch: z.record(z.string(), z.any()) }),
       execute: async ({ id, patch }) => {
         const before = id ? await snapshotOpportunity(id) : null;
-        const merged: Partial<Opportunity> = { ...(id ? { id } : {}), ...(patch as Partial<Opportunity>) };
-        await upsertOpportunity(merged);
+        const savedId = await upsertOpportunity({ ...(id ? { id } : {}), ...patch } as any);
         await recordActivity({
           turnId,
           actor: "agent",
           tool: "upsertOpportunity",
           entity: "opportunity",
-          entityId: id ?? null,
+          entityId: savedId,
           beforeImage: before,
           summary: id ? `Updated opportunity` : `Created opportunity ${(patch as { name?: string }).name}`,
         });
