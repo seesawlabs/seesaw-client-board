@@ -21,3 +21,10 @@ export interface Client {
   updatedAt?: number;
 }
 export interface Board { clients: Client[]; opportunities: Opportunity[] }
+export interface Activity {
+  id: string; createdAt: number; turnId: string;
+  actor: "agent" | "user"; tool: string; summary: string;
+  entity: "client" | "opportunity"; entityId: string | null;
+  beforeImage: unknown | null; undone: boolean;
+}
+export interface ChatMessage { id: string; role: "user" | "assistant"; content: string; turnId: string; createdAt: number; }
