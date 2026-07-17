@@ -256,19 +256,120 @@ and one opportunity for local/first-deploy demoing.
 
 ---
 
-## 7. v2 — AI context tailoring (designed-for, not built now)
+## 7. v2 — AI Assistant (talk to the board; it maintains itself)
 
-**Input:** a per-client **Context** area — paste transcript/doc text + labeled
-links, **and (now feasible) upload files** to Vercel Blob (PDFs, decks).
+**Why:** the failure mode of an internal tool is manual upkeep — it becomes
+overhead and quietly dies. The fix: make board state, decisions, and docs a
+**byproduct of natural work**. You chat, paste a transcript, or drop a link;
+the assistant updates the board for you. (Supersedes the earlier "propose a
+tailored process at intake" idea — that's now just one thing the assistant can
+do.) Architecture decision recorded in **ADR 0004**.
 
-**Action:** a server route sends the context + the canonical process to an LLM
-(via the Vercel AI SDK / AI Gateway) and returns a *proposed* instance: suggested
-`entryPoint`, per-step skip/validate/add recommendations each with a drafted
-`why`, and any industry-specific step additions. Rendered as **suggestions the
-human reviews, edits, and accepts** — nothing auto-applied.
+### 7.1 Interaction model
 
-Being standalone (real server + Blob + AI SDK) is what makes this a clean build
-rather than the artifact's paste-only workaround.
+A single **global assistant** — a chat + drop-zone (slide-over panel and/or an
+`/assistant` route). You type what happened, paste transcript text, or paste a
+link. It **infers which client/opportunity**, decides what should change,
+**auto-applies** the changes, and records each in an **activity feed with
+one-click undo**. It also answers read questions ("what's at risk?", "who's
+overloaded?", "what did we skip on Rivet and why?").
+
+**Autonomy = auto-apply + log + undo** (chosen in brainstorming): lowest
+friction; trust comes from a complete, reversible audit trail rather than
+pre-approval. Destructive actions (delete a client) confirm even so.
+
+### 7.2 Architecture — the agent loop
+
+The agent's "hands" are the **existing, validated server actions**, exposed as a
+whitelisted set of tools. It cannot run arbitrary SQL or code.
+
+```
+user message (text / pasted transcript / pasted link)
+  → /api/assistant (streaming; Vercel AI SDK, tool-calling, via AI Gateway)
+      context each turn: current board (roster + state), PROCESS template,
+                         recent activity, conversation so far
+  → model calls whitelisted tools
+  → tools run the server actions + append to the activity log (with before-image)
+  → board revalidates (UI reflects changes); agent streams a short summary
+```
+
+- **Model:** default `anthropic/claude-sonnet-<latest>` through the Vercel AI
+  Gateway (swappable; escalate to a stronger model for hard multi-step turns).
+- **Turn cap:** a max tool-call count per user message to prevent runaway loops.
+
+### 7.3 Tool surface (wrap existing actions)
+
+- `queryBoard(description)` — **read-only**; resolve clients/opportunities for
+  inference + Q&A.
+- `upsertClient(patch)` — create/update deal fields (name, billing, opportunity,
+  contract, dates, status, phase, assignments, buildUrl, risks/needs/findings,
+  entryPoint). Wraps `upsertClient`.
+- `setStep(clientId, stepId, { status, note, decisions })` — wraps `saveStep`.
+- `addListItem(clientId, kind: risk|need|finding, text)` / `removeListItem` —
+  convenience over `upsertClient`.
+- `upsertOpportunity(patch)` / `deleteOpportunity(id)`.
+- `deleteClient(id)` — **destructive: always confirms** before running.
+
+Every mutating tool records an activity row (before-image + summary + tool/args).
+
+### 7.4 Client inference
+
+The agent gets the client roster (names + a few keywords/aliases) in context and
+resolves references itself. Ambiguous or no match → it asks a one-line
+clarifying question or proposes **creating** a new client; it never guesses on
+destructive ops.
+
+### 7.5 Activity log + undo (new persistence)
+
+New `activity` table: `id`, `createdAt`, `actor` (`agent`|`user`), `clientId?`,
+`summary` (human string), `tool`, `args` (jsonb), `beforeImage` (jsonb — the
+affected row's prior full state, or null for creates), `undone` (bool),
+`turnId` (groups all changes from one user message).
+
+- **Undo** = restore `beforeImage` (or delete the created row); **"undo all"**
+  reverts a whole `turnId`. Undo is itself recorded as an activity entry.
+- The feed is both the audit trail and the trust mechanism for auto-apply.
+
+**Conversation persistence:** one persisted global thread (`messages` table:
+`id`, `createdAt`, `role`, `content`, `turnId`) so context survives reloads;
+clearable. Multi-thread is deferred (solo user for now).
+
+### 7.6 Ingestion
+
+- **v1:** typed text + **pasted transcript text** (just chat input — no infra) +
+  **pasted link** → a server step scrapes the URL to text (Firecrawl if
+  available, else fetch + readability) and feeds it into the turn's context.
+- **Phase 2 (immediate fast-follow):** **file upload** → Vercel Blob; parse
+  PDF/DOCX/TXT (later audio → transcription) to text for the same agent.
+
+### 7.7 Docs out (Phase 3)
+
+The agent **generates artifacts from the maintained state** — a status update, a
+client-facing summary, the "deliberately skipped & why" narrative, a kickoff
+brief — rendered in-chat, copyable/exportable as Markdown. Read-only generation;
+does not mutate state.
+
+### 7.8 Proactive (Phase 4, optional)
+
+A scheduled pass (Vercel Cron) surfaces stale clients, skipped steps missing a
+reason, over-allocation, and approaching end dates as suggestions you accept or
+dismiss.
+
+### 7.9 Build order (each phase independently useful)
+
+1. **The magic core** — `activity` log + undo infra; tool wrappers over the
+   actions; the `/api/assistant` route + global chat UI + activity feed; client
+   inference; text-in.
+2. Link scrape-in, then file upload (Blob + parse).
+3. Docs-out generation.
+4. Proactive nudges (Cron).
+
+### 7.10 Testing
+
+Pure logic (inference resolver, activity/undo inverse computation, tool-arg
+validation) is unit-tested without the LLM. The agent loop is integration-tested
+with recorded/mock tool-call transcripts (deterministic) plus a few live smoke
+prompts. **Undo round-trips are tested**: apply → undo → state equals before.
 
 ---
 
@@ -282,6 +383,13 @@ sales-call context). Baseline (SeeSauce `security-baseline` / `data-handling`):
 - **Data minimization:** store summaries over raw transcripts where practical;
   don't log client data in server actions.
 - **Retention:** deletes are hard deletes in v1; revisit if audit needs arise.
+- **LLM data flow (v2 assistant):** client-confidential content (transcripts,
+  contract values, notes) is sent to the model. Route through the **AI Gateway
+  with zero-data-retention**; never log raw client content; retain
+  pasted/uploaded raw context only as needed and make uploads deletable. The
+  agent can only call whitelisted, validated tools; auto-applied changes are
+  always reversible (activity log + undo); destructive ops confirm. Recorded as
+  **ADR 0004**.
 - Revisit access control when the first per-user feature lands (ADR 0003).
 
 ---
@@ -295,5 +403,8 @@ sales-call context). Baseline (SeeSauce `security-baseline` / `data-handling`):
   deferred.
 - **Deferred:** a canonical `people` table (vs free-text assignment names) —
   revisit with the resource view if typos bite (ADR 0002/0003).
-- **v2:** file uploads (Vercel Blob) + AI provider wiring (AI SDK/Gateway) —
-  separate spec + plan.
+- **v2 assistant (§7):** default model = `anthropic/claude-sonnet-<latest>` via
+  AI Gateway, swappable; a per-turn tool-call cap bounds cost/loops. Single
+  global chat thread for now (multi-thread deferred). File upload + doc-gen +
+  proactive nudges are phased after the text-in magic core. Undo = restore the
+  stored before-image (or delete a created row).
