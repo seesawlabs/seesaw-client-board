@@ -34,8 +34,13 @@ async function applyUndo(op: UndoOp) {
   const table = op.entity === "client" ? clients : opportunities;
   if (op.op === "delete") { await db.delete(table).where(eq(table.id, op.id)); return; }
   // restore: delete-then-insert the exact prior row (idempotent regardless of exists)
-  await db.delete(table).where(eq(table.id, op.row.id));
-  await db.insert(table).values(op.row);
+  const { createdAt, updatedAt, ...rest } = op.row as Record<string, unknown>;
+  await db.delete(table).where(eq(table.id, (op.row as any).id));
+  await db.insert(table).values({
+    ...rest,
+    ...(createdAt ? { createdAt: new Date(createdAt as string) } : {}),
+    ...(updatedAt ? { updatedAt: new Date(updatedAt as string) } : {}),
+  } as any);
 }
 
 export async function undoActivity(id: string) {
