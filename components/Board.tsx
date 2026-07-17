@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Board as BoardT } from "@/lib/types";
+import type { Board as BoardT, Activity } from "@/lib/types";
 import { BRAND, ALL_STEPS } from "@/lib/process";
 import { saveStep } from "@/lib/actions";
 import { TimelineOverview } from "@/components/TimelineOverview";
@@ -13,7 +13,7 @@ import { OppEditor } from "@/components/OppEditor";
 import { Chip } from "@/components/ui";
 import { Assistant } from "@/components/Assistant";
 
-export function Board({ initial }: { initial: BoardT }) {
+export function Board({ initial, activity = [] }: { initial: BoardT; activity?: Activity[] }) {
   const router = useRouter();
   const [view, setView] = useState<"client" | "resource">("client");
   const [editingClient, setEditingClient] = useState<string | null>(null); // id | "new" | null
@@ -230,7 +230,7 @@ export function Board({ initial }: { initial: BoardT }) {
         );
       })()}
 
-      <Assistant open={assistantOpen} onClose={() => setAssistantOpen(false)} />
+      <Assistant open={assistantOpen} onClose={() => setAssistantOpen(false)} activity={activity} />
     </div>
   );
 }

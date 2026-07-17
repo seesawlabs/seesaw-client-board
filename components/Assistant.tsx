@@ -4,12 +4,22 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { useRouter } from "next/navigation";
 import { BRAND } from "@/lib/process";
+import { ActivityFeed } from "@/components/ActivityFeed";
+import type { Activity } from "@/lib/types";
 
 // Global assistant chat panel. Wired to POST /api/assistant (Task 5), which
 // expects { messages, turnId } and returns a UI-message stream. `turnId` is a
 // stable per-mount id, threaded to the server so tool calls in this session
 // can be scoped/logged together.
-export function Assistant({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function Assistant({
+  open,
+  onClose,
+  activity = [],
+}: {
+  open: boolean;
+  onClose: () => void;
+  activity?: Activity[];
+}) {
   const router = useRouter();
   const [turnId] = useState(() => Math.random().toString(36).slice(2));
   const { messages, sendMessage, status } = useChat({
@@ -17,6 +27,7 @@ export function Assistant({ open, onClose }: { open: boolean; onClose: () => voi
     onFinish: () => router.refresh(), // board picks up any applied changes
   });
   const [input, setInput] = useState("");
+  const [showActivity, setShowActivity] = useState(true);
   if (!open) return null;
 
   const busy = status === "submitted" || status === "streaming";
@@ -56,6 +67,21 @@ export function Assistant({ open, onClose }: { open: boolean; onClose: () => voi
         {status === "error" && (
           <div className="text-xs" style={{ color: BRAND.red }}>
             Something went wrong. Try again.
+          </div>
+        )}
+      </div>
+      <div className="border-t" style={{ borderColor: "#E2E6ED" }}>
+        <button
+          onClick={() => setShowActivity((v) => !v)}
+          className="w-full flex items-center justify-between px-4 py-2 text-[11px] uppercase tracking-wide font-semibold"
+          style={{ color: BRAND.navy }}
+        >
+          <span>Recent activity{activity.filter((a) => a.tool !== "undo").length > 0 ? ` (${activity.filter((a) => a.tool !== "undo").length})` : ""}</span>
+          <span>{showActivity ? "▾" : "▸"}</span>
+        </button>
+        {showActivity && (
+          <div className="px-4 pb-3 max-h-56 overflow-y-auto">
+            <ActivityFeed activity={activity} />
           </div>
         )}
       </div>
