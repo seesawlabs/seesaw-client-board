@@ -40,7 +40,7 @@ async function applyUndo(op: UndoOp) {
 
 export async function undoActivity(id: string) {
   const [a] = await db.select().from(activity).where(eq(activity.id, id));
-  if (!a || a.undone) return;
+  if (!a || a.undone || a.tool === "undo") return;
   await applyUndo(undoPlan({ entity: a.entity as any, entityId: a.entityId, beforeImage: a.beforeImage }));
   await db.update(activity).set({ undone: true }).where(eq(activity.id, id));
   await recordActivity({
