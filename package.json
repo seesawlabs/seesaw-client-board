@@ -31,10 +31,12 @@
   "homepage": "https://github.com/calvinlocklear1205/seesaw-client-board#readme",
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
+    "ai": "^6.0.230",
     "drizzle-orm": "^0.45.2",
     "next": "^15.5.20",
     "react": "^19.2.7",
-    "react-dom": "^19.2.7"
+    "react-dom": "^19.2.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
