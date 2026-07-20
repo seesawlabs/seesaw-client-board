@@ -12,6 +12,7 @@ import { StepEditor } from "@/components/StepEditor";
 import { OppEditor } from "@/components/OppEditor";
 import { Chip, useMounted } from "@/components/ui";
 import { Assistant } from "@/components/Assistant";
+import { Brief } from "@/components/Brief";
 
 export function Board({ initial, activity = [] }: { initial: BoardT; activity?: Activity[] }) {
   const router = useRouter();
@@ -90,7 +91,8 @@ export function Board({ initial, activity = [] }: { initial: BoardT; activity?: 
           </>
         ) : (
           <>
-        <h2 className="text-2xl mb-4" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
+        <Brief clients={clients} activity={activity} />
+        <h2 className="text-[13px] uppercase tracking-widest font-bold mb-3" style={{ color: "#A7A399" }}>
           Engagement calendar
         </h2>
         <TimelineOverview clients={clients} />
