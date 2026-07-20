@@ -126,6 +126,7 @@ export function normalizeClient(c: Partial<Client> & { name?: string }): Client 
   });
   return {
     id: c.id || uid(),
+    accountId: c.accountId ?? null,
     name: c.name || "",
     summary: c.summary || "",
     start: c.start || "",

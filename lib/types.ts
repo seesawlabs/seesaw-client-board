@@ -7,8 +7,18 @@ export interface Opportunity {
   id: string; name: string; industry: string; stage: string;
   contact: string; notes: string; expertiseAsk: string; updatedAt?: number;
 }
+// The client/company that groups projects (UI label: "Client").
+export interface Account {
+  id: string; name: string;
+  driveFolderId: string; slackInternal: string; slackExternal: string;
+}
+
+// NOTE: `Client` is historically the ENGAGEMENT / PROJECT (one 5D process).
+// It belongs to an Account (the actual client company) via accountId.
+// UI label for this row: "Project".
 export interface Client {
-  id: string; name: string; summary: string; start: string; end: string;
+  id: string; accountId: string | null;
+  name: string; summary: string; start: string; end: string;
   phase: string; status: string;
   billing: "billable" | "internal";
   opportunity: { types: string[]; note: string };
@@ -20,7 +30,7 @@ export interface Client {
   process: Record<string, StepInstance>;
   updatedAt?: number;
 }
-export interface Board { clients: Client[]; opportunities: Opportunity[] }
+export interface Board { accounts: Account[]; clients: Client[]; opportunities: Opportunity[] }
 export interface Activity {
   id: string; createdAt: number; turnId: string;
   actor: "agent" | "user"; tool: string; summary: string;
