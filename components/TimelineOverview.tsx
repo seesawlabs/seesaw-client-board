@@ -1,5 +1,6 @@
 "use client";
 import { BRAND, STATUS } from "@/lib/process";
+import { useMounted } from "./ui";
 import type { Client } from "@/lib/types";
 
 export function TimelineOverview({
@@ -9,6 +10,7 @@ export function TimelineOverview({
   clients: Client[];
   onSelect?: (id: string) => void;
 }) {
+  const mounted = useMounted();
   const rows = clients.filter((c) => {
     const s = new Date(c.start).getTime();
     const e = new Date(c.end).getTime();
@@ -20,6 +22,12 @@ export function TimelineOverview({
         Add start and end dates to engagements to see them on the calendar.
       </div>
     );
+  }
+  // The timeline's positioning does month/day date math and reads the current
+  // time, all timezone-sensitive. Render it only after mount so the server(UTC)
+  // and client(local) never disagree during hydration.
+  if (!mounted) {
+    return <div className="rounded-lg border bg-white p-5 mb-10" style={{ borderColor: "#E2E6ED", minHeight: 60 + rows.length * 34 }} />;
   }
 
   // Range: pad to full months around earliest start / latest end

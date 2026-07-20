@@ -10,7 +10,7 @@ import { ClientCard } from "@/components/ClientCard";
 import { ClientEditor } from "@/components/ClientEditor";
 import { StepEditor } from "@/components/StepEditor";
 import { OppEditor } from "@/components/OppEditor";
-import { Chip } from "@/components/ui";
+import { Chip, useMounted } from "@/components/ui";
 import { Assistant } from "@/components/Assistant";
 
 export function Board({ initial, activity = [] }: { initial: BoardT; activity?: Activity[] }) {
@@ -20,6 +20,7 @@ export function Board({ initial, activity = [] }: { initial: BoardT; activity?: 
   const [stepEdit, setStepEdit] = useState<{ clientId: string; stepId: string } | null>(null);
   const [editingOpp, setEditingOpp] = useState<string | null>(null); // id | "new" | null
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const mounted = useMounted();
   const { clients, opportunities } = initial;
 
   const atRisk = clients.filter((c) => c.status === "At Risk" || c.status === "Blocked").length;
@@ -202,11 +203,9 @@ export function Board({ initial, activity = [] }: { initial: BoardT; activity?: 
                   <button onClick={() => setEditingOpp(o.id)} className="text-sm font-medium" style={{ color: "#66707F" }}>
                     Edit
                   </button>
-                  {o.updatedAt && (
-                    <span className="ml-auto text-[11px]" style={{ color: "#8A93A3" }}>
-                      Updated {new Date(o.updatedAt).toLocaleDateString()}
-                    </span>
-                  )}
+                  <span className="ml-auto text-[11px]" style={{ color: "#8A93A3" }} suppressHydrationWarning>
+                    {mounted && o.updatedAt ? `Updated ${new Date(o.updatedAt).toLocaleDateString()}` : ""}
+                  </span>
                 </div>
               </div>
             )

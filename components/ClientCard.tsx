@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { BRAND, STATUS, BILLING, OPP_TYPES, contractLabel, clientProgress, skippedItems } from "@/lib/process";
 import type { Client } from "@/lib/types";
-import { Chip, PhaseTracker, TimeBar, ListBlock } from "@/components/ui";
+import { Chip, PhaseTracker, TimeBar, ListBlock, useMounted } from "@/components/ui";
 import { ProcessSection } from "@/components/ProcessSection";
 
 export function ClientCard({
@@ -15,6 +15,7 @@ export function ClientCard({
   onStep: (stepId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const mounted = useMounted();
   const st = STATUS[c.status] || STATUS["On Track"];
   const progress = clientProgress(c);
   const flagCount = (c.risks?.length || 0) + (c.needs?.length || 0) + (c.findings?.length || 0);
@@ -102,8 +103,8 @@ export function ClientCard({
           <button onClick={onEdit} className="text-sm font-medium" style={{ color: "#66707F" }}>
             Edit
           </button>
-          <span className="ml-auto text-[11px]" style={{ color: "#8A93A3" }}>
-            Updated {c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : "—"}
+          <span className="ml-auto text-[11px]" style={{ color: "#8A93A3" }} suppressHydrationWarning>
+            {mounted && c.updatedAt ? `Updated ${new Date(c.updatedAt).toLocaleDateString()}` : ""}
           </span>
         </div>
 

@@ -1,6 +1,17 @@
 "use client";
+import { useState, useEffect } from "react";
 import { BRAND, PHASES, STATUS_META } from "@/lib/process";
 import type { Status } from "@/lib/types";
+
+// True only after the client has mounted. Use to gate any render that depends
+// on the current time or the viewer's timezone/locale (Date.now(),
+// toLocaleDateString, etc.) so the server and first client render match and
+// hydration doesn't mismatch. See the hydration bug fixed in this file's history.
+export function useMounted() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted;
+}
 
 export const inputCls =
   "w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2";
@@ -93,6 +104,7 @@ export const PhaseTracker = ({ phase }: { phase: string }) => {
 };
 
 export const TimeBar = ({ start, end }: { start: string; end: string }) => {
+  const mounted = useMounted();
   if (!start || !end) return null;
   const s = new Date(start).getTime();
   const e = new Date(end).getTime();
@@ -103,19 +115,20 @@ export const TimeBar = ({ start, end }: { start: string; end: string }) => {
   const weeksLeft = Math.max(0, Math.round((e - now) / (7 * 864e5)));
   const fmt = (d: string | number) =>
     new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  // Date/locale + current-time values render only after mount to avoid a
+  // server(UTC)/client(local) hydration mismatch.
   return (
     <div className="mt-1">
-      <div className="flex justify-between text-[11px]" style={{ color: "#66707F" }}>
-        <span>{fmt(start)}</span>
-        <span>
-          {weeksLeft} of {weeksTotal} wks left
-        </span>
-        <span>{fmt(end)}</span>
+      <div className="flex justify-between text-[11px]" style={{ color: "#66707F" }} suppressHydrationWarning>
+        <span>{mounted ? fmt(start) : ""}</span>
+        <span>{mounted ? `${weeksLeft} of ${weeksTotal} wks left` : ""}</span>
+        <span>{mounted ? fmt(end) : ""}</span>
       </div>
       <div className="h-1.5 rounded-full mt-0.5" style={{ background: "#E4E8EE" }}>
         <div
           className="h-1.5 rounded-full"
-          style={{ width: `${pct}%`, background: BRAND.lightBlue }}
+          style={{ width: mounted ? `${pct}%` : "0%", background: BRAND.lightBlue }}
+          suppressHydrationWarning
         />
       </div>
     </div>
