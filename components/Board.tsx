@@ -13,8 +13,17 @@ import { OppEditor } from "@/components/OppEditor";
 import { Chip, useMounted } from "@/components/ui";
 import { Assistant } from "@/components/Assistant";
 import { Brief } from "@/components/Brief";
+import { GoogleConnect } from "@/components/GoogleConnect";
 
-export function Board({ initial, activity = [] }: { initial: BoardT; activity?: Activity[] }) {
+export function Board({
+  initial,
+  activity = [],
+  google = { configured: false, connected: false, email: "" },
+}: {
+  initial: BoardT;
+  activity?: Activity[];
+  google?: { configured: boolean; connected: boolean; email: string };
+}) {
   const router = useRouter();
   const [view, setView] = useState<"client" | "resource">("client");
   const [editingClient, setEditingClient] = useState<string | null>(null); // id | "new" | null
@@ -91,6 +100,7 @@ export function Board({ initial, activity = [] }: { initial: BoardT; activity?: 
           </>
         ) : (
           <>
+        <GoogleConnect {...google} />
         <Brief accounts={accounts} clients={clients} activity={activity} />
         <h2 className="text-[13px] uppercase tracking-widest font-bold mb-3" style={{ color: "#A7A399" }}>
           Engagement calendar

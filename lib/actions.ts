@@ -5,7 +5,18 @@ import { db } from "@/lib/db";
 import { accounts, clients, opportunities } from "@/lib/db/schema";
 import { normalizeClient } from "@/lib/process";
 import { listActivity, undoActivity, undoTurn } from "@/lib/assistant/activity";
+import { getConnection, disconnectGoogle, googleConfigured } from "@/lib/google";
 import type { Account, Activity, Board, Client, Opportunity, StepInstance } from "@/lib/types";
+
+export async function getGoogleStatus(): Promise<{ configured: boolean; connected: boolean; email: string }> {
+  const conn = await getConnection();
+  return { configured: googleConfigured(), connected: !!conn, email: conn?.email || "" };
+}
+
+export async function disconnectGoogleAction(): Promise<void> {
+  await disconnectGoogle();
+  revalidatePath("/");
+}
 
 export async function getBoard(): Promise<Board> {
   const [aRows, cRows, oRows] = await Promise.all([
