@@ -101,6 +101,15 @@ export function defaultProcessForEntry(entryPoint: Client["entryPoint"]): Record
   return out;
 }
 
+// Coerce to a string[]: pass arrays (keeping only strings); wrap a lone string;
+// else empty. Guards against the AI (or any caller) sending e.g. risks as a
+// single string, which would otherwise crash `.map` at render.
+function toStrList(v: unknown): string[] {
+  if (Array.isArray(v)) return v.filter((x): x is string => typeof x === "string");
+  if (typeof v === "string" && v.trim()) return [v];
+  return [];
+}
+
 export function normalizeClient(c: Partial<Client> & { name?: string }): Client {
   const entryPoint = c.entryPoint?.mode
     ? { mode: c.entryPoint.mode, atStep: c.entryPoint.atStep ?? null }
@@ -124,14 +133,25 @@ export function normalizeClient(c: Partial<Client> & { name?: string }): Client 
     phase: c.phase || "Discover",
     status: c.status || "On Track",
     billing: c.billing || "billable",
-    opportunity: { types: c.opportunity?.types ?? [], note: c.opportunity?.note || "" },
-    contractValue: c.contractValue ?? null,
+    opportunity: {
+      types: Array.isArray(c.opportunity?.types)
+        ? c.opportunity!.types.filter((t): t is string => typeof t === "string")
+        : [],
+      note: c.opportunity?.note || "",
+    },
+    contractValue: typeof c.contractValue === "number" ? c.contractValue : null,
     buildUrl: c.buildUrl || "",
-    assignments: (c.assignments ?? []).map((a) => ({ name: a.name || "", role: a.role || "", load: a.load || "core" })),
-    risks: c.risks ?? [],
-    needs: c.needs ?? [],
-    findings: c.findings ?? [],
-    links: c.links ?? [],
+    assignments: Array.isArray(c.assignments)
+      ? c.assignments
+          .filter((a): a is NonNullable<typeof a> => !!a && typeof a === "object")
+          .map((a) => ({ name: a.name || "", role: a.role || "", load: a.load || "core" }))
+      : [],
+    risks: toStrList(c.risks),
+    needs: toStrList(c.needs),
+    findings: toStrList(c.findings),
+    links: Array.isArray(c.links)
+      ? c.links.filter((l): l is { label: string; url: string } => !!l && typeof l === "object")
+      : [],
     entryPoint,
     process,
     updatedAt: c.updatedAt || Date.now(),

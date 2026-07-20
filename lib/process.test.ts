@@ -122,3 +122,20 @@ describe("resourceRows", () => {
     expect(CAPACITY).toBe(5);
   });
 });
+
+describe("normalizeClient array coercion", () => {
+  it("coerces a stringified risks into a one-element array (AI sent a string)", () => {
+    const c = normalizeClient({ name: "X", risks: "one big risk" as unknown as string[] });
+    expect(c.risks).toEqual(["one big risk"]);
+  });
+  it("drops non-array assignments/links instead of crashing", () => {
+    const c = normalizeClient({ name: "X", assignments: "oops" as never, links: 5 as never });
+    expect(c.assignments).toEqual([]);
+    expect(c.links).toEqual([]);
+  });
+  it("keeps valid arrays untouched", () => {
+    const c = normalizeClient({ name: "X", needs: ["n1"], findings: ["f1"] });
+    expect(c.needs).toEqual(["n1"]);
+    expect(c.findings).toEqual(["f1"]);
+  });
+});

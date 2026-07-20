@@ -144,7 +144,7 @@ export const ListBlock = ({
   items: string[] | undefined;
   accent: string;
 }) =>
-  items && items.length > 0 ? (
+  Array.isArray(items) && items.length > 0 ? (
     <div className="mb-3">
       <div className="text-[11px] uppercase tracking-widest font-semibold mb-1" style={{ color: accent }}>
         {title}
