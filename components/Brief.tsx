@@ -1,7 +1,7 @@
 "use client";
-import { BRAND, clientProgress } from "@/lib/process";
+import { BRAND } from "@/lib/process";
 import { useMounted } from "./ui";
-import type { Client, Activity } from "@/lib/types";
+import type { Account, Client, Activity } from "@/lib/types";
 
 const GOOD = "#2F7A55";
 const WARN = "#B7791F";
@@ -24,24 +24,26 @@ function firstBlockedNote(c: Client): string | null {
   return null;
 }
 
-function buildNeeds(clients: Client[]) {
+function buildNeeds(clients: Client[], nameOf: (c: Client) => string) {
   const items: { sev: Sev; who: string; what: string }[] = [];
   for (const c of clients) {
     const blocked = firstBlockedNote(c);
     if (c.status === "Blocked" || blocked) {
-      items.push({ sev: "crit", who: c.name, what: blocked || c.needs?.[0] || c.risks?.[0] || "Blocked — needs a look" });
+      items.push({ sev: "crit", who: nameOf(c), what: blocked || c.needs?.[0] || c.risks?.[0] || "Blocked — needs a look" });
     } else if (c.status === "At Risk") {
-      items.push({ sev: "warn", who: c.name, what: c.needs?.[0] || c.risks?.[0] || "At risk — needs a look" });
+      items.push({ sev: "warn", who: nameOf(c), what: c.needs?.[0] || c.risks?.[0] || "At risk — needs a look" });
     } else if (c.needs?.length) {
-      items.push({ sev: "info", who: c.name, what: c.needs[0] });
+      items.push({ sev: "info", who: nameOf(c), what: c.needs[0] });
     }
   }
   return items.sort((a, b) => SEV_ORDER[a.sev] - SEV_ORDER[b.sev]).slice(0, 5);
 }
 
-export function Brief({ clients, activity }: { clients: Client[]; activity: Activity[] }) {
+export function Brief({ accounts, clients, activity }: { accounts: Account[]; clients: Client[]; activity: Activity[] }) {
   const mounted = useMounted();
-  const needs = buildNeeds(clients);
+  const acctName = new Map(accounts.map((a) => [a.id, a.name]));
+  const nameOf = (c: Client) => (c.accountId && acctName.has(c.accountId) ? `${acctName.get(c.accountId)} · ${c.name}` : c.name);
+  const needs = buildNeeds(clients, nameOf);
   const recent = activity.filter((a) => a.tool !== "undo" && !a.undone).slice(0, 4);
   const attention = needs.filter((n) => n.sev === "crit" || n.sev === "warn").length;
   const onTrack = clients.length - attention;

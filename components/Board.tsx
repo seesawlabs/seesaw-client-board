@@ -22,7 +22,7 @@ export function Board({ initial, activity = [] }: { initial: BoardT; activity?: 
   const [editingOpp, setEditingOpp] = useState<string | null>(null); // id | "new" | null
   const [assistantOpen, setAssistantOpen] = useState(false);
   const mounted = useMounted();
-  const { clients, opportunities } = initial;
+  const { accounts, clients, opportunities } = initial;
 
   const atRisk = clients.filter((c) => c.status === "At Risk" || c.status === "Blocked").length;
   const openAsks = clients.reduce((n, c) => n + (c.needs?.length || 0), 0);
@@ -91,7 +91,7 @@ export function Board({ initial, activity = [] }: { initial: BoardT; activity?: 
           </>
         ) : (
           <>
-        <Brief clients={clients} activity={activity} />
+        <Brief accounts={accounts} clients={clients} activity={activity} />
         <h2 className="text-[13px] uppercase tracking-widest font-bold mb-3" style={{ color: "#A7A399" }}>
           Engagement calendar
         </h2>
@@ -99,46 +99,76 @@ export function Board({ initial, activity = [] }: { initial: BoardT; activity?: 
 
         <div className="flex items-baseline justify-between mb-4 mt-8">
           <h2 className="text-2xl" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
-            Active engagements
+            Clients &amp; projects
           </h2>
           <button
             onClick={() => setEditingClient("new")}
             className="px-4 py-2 rounded-md text-sm font-semibold text-white"
             style={{ background: BRAND.red }}
           >
-            + Add client
+            + Add project
           </button>
         </div>
 
-        <div className="space-y-4 mb-12">
+        <div className="mb-12">
           {editingClient === "new" && (
-            <ClientEditor
-              onSaved={() => { setEditingClient(null); router.refresh(); }}
-              onCancel={() => setEditingClient(null)}
-            />
-          )}
-          {clients.length === 0 && (
-            <div className="p-8 rounded-lg border border-dashed text-center text-sm" style={{ borderColor: "#C8CFDA", color: "#66707F" }}>
-              No active engagements yet. Add your first client to get the board going.
-            </div>
-          )}
-          {clients.map((c) =>
-            editingClient === c.id ? (
+            <div className="mb-4">
               <ClientEditor
-                key={c.id}
-                initial={c}
                 onSaved={() => { setEditingClient(null); router.refresh(); }}
                 onCancel={() => setEditingClient(null)}
               />
-            ) : (
-              <ClientCard
-                key={c.id}
-                client={c}
-                onEdit={() => setEditingClient(c.id)}
-                onStep={(stepId) => setStepEdit({ clientId: c.id, stepId })}
-              />
-            )
+            </div>
           )}
+          {clients.length === 0 && editingClient !== "new" && (
+            <div className="p-8 rounded-lg border border-dashed text-center text-sm" style={{ borderColor: "#C8CFDA", color: "#66707F" }}>
+              No projects yet. Add your first one to get the board going.
+            </div>
+          )}
+          {(() => {
+            const renderRow = (c: (typeof clients)[number]) =>
+              editingClient === c.id ? (
+                <ClientEditor key={c.id} initial={c} onSaved={() => { setEditingClient(null); router.refresh(); }} onCancel={() => setEditingClient(null)} />
+              ) : (
+                <ClientCard key={c.id} client={c} onEdit={() => setEditingClient(c.id)} onStep={(stepId) => setStepEdit({ clientId: c.id, stepId })} />
+              );
+            const byAccount = new Map<string, typeof clients>();
+            const ungrouped: typeof clients = [];
+            for (const c of clients) {
+              if (c.accountId) { if (!byAccount.has(c.accountId)) byAccount.set(c.accountId, [] as unknown as typeof clients); (byAccount.get(c.accountId) as (typeof clients[number])[]).push(c); }
+              else ungrouped.push(c);
+            }
+            const grouped = accounts.filter((a) => byAccount.has(a.id));
+            return (
+              <>
+                {grouped.map((a) => {
+                  const projects = byAccount.get(a.id)!;
+                  return (
+                    <div key={a.id} className="mb-9">
+                      <div className="flex items-baseline gap-3 mb-3 pb-2" style={{ borderBottom: "1px solid #E6E1D7" }}>
+                        <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 19, color: BRAND.navy }}>{a.name}</h3>
+                        <span className="text-[11px] uppercase tracking-[0.16em] font-bold" style={{ color: "#A7A399" }}>
+                          {projects.length} project{projects.length === 1 ? "" : "s"}
+                        </span>
+                        {a.driveFolderId && <span className="text-[11px] font-semibold" style={{ color: "#2F7A55" }}>● Drive linked</span>}
+                        {(a.slackInternal || a.slackExternal) && <span className="text-[11px] font-semibold" style={{ color: BRAND.blue }}>● Slack</span>}
+                      </div>
+                      <div className="space-y-4">{projects.map(renderRow)}</div>
+                    </div>
+                  );
+                })}
+                {ungrouped.length > 0 && (
+                  <div className="mb-9">
+                    {grouped.length > 0 && (
+                      <div className="flex items-baseline gap-3 mb-3 pb-2" style={{ borderBottom: "1px solid #E6E1D7" }}>
+                        <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 19, color: "#A7A399" }}>Unassigned</h3>
+                      </div>
+                    )}
+                    <div className="space-y-4">{ungrouped.map(renderRow)}</div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
         <div className="flex items-baseline justify-between mb-1">
           <h2 className="text-2xl" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>

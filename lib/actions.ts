@@ -2,13 +2,20 @@
 import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { clients, opportunities } from "@/lib/db/schema";
+import { accounts, clients, opportunities } from "@/lib/db/schema";
 import { normalizeClient } from "@/lib/process";
 import { listActivity, undoActivity, undoTurn } from "@/lib/assistant/activity";
-import type { Activity, Board, Client, Opportunity, StepInstance } from "@/lib/types";
+import type { Account, Activity, Board, Client, Opportunity, StepInstance } from "@/lib/types";
 
 export async function getBoard(): Promise<Board> {
-  const [cRows, oRows] = await Promise.all([db.select().from(clients), db.select().from(opportunities)]);
+  const [aRows, cRows, oRows] = await Promise.all([
+    db.select().from(accounts),
+    db.select().from(clients),
+    db.select().from(opportunities),
+  ]);
+  const as = aRows.map((a) => ({
+    id: a.id, name: a.name, driveFolderId: a.driveFolderId, slackInternal: a.slackInternal, slackExternal: a.slackExternal,
+  })) as Account[];
   const cs = cRows
     .map((r) => normalizeClient({ ...r, updatedAt: r.updatedAt ? r.updatedAt.getTime() : undefined } as unknown as Partial<Client>))
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
@@ -17,13 +24,32 @@ export async function getBoard(): Promise<Board> {
     contact: o.contact, notes: o.notes, expertiseAsk: o.expertiseAsk,
     updatedAt: o.updatedAt ? o.updatedAt.getTime() : undefined,
   })) as Opportunity[];
-  return { clients: cs, opportunities: os };
+  return { accounts: as, clients: cs, opportunities: os };
+}
+
+export async function upsertAccount(input: Partial<Account>): Promise<string> {
+  const row = {
+    name: input.name || "", driveFolderId: input.driveFolderId || "",
+    slackInternal: input.slackInternal || "", slackExternal: input.slackExternal || "", updatedAt: new Date(),
+  };
+  const existing = input.id ? await db.select({ id: accounts.id }).from(accounts).where(eq(accounts.id, input.id)) : [];
+  let id: string;
+  if (existing.length) { await db.update(accounts).set(row).where(eq(accounts.id, input.id!)); id = input.id!; }
+  else { const [ins] = await db.insert(accounts).values(row).returning({ id: accounts.id }); id = ins.id; }
+  revalidatePath("/");
+  return id;
+}
+
+export async function deleteAccount(id: string): Promise<void> {
+  await db.update(clients).set({ accountId: null }).where(eq(clients.accountId, id));
+  await db.delete(accounts).where(eq(accounts.id, id));
+  revalidatePath("/");
 }
 
 export async function upsertClient(input: Partial<Client>): Promise<string> {
   const c = normalizeClient(input);
   const row = {
-    name: c.name, summary: c.summary, start: c.start, end: c.end, phase: c.phase, status: c.status,
+    accountId: c.accountId, name: c.name, summary: c.summary, start: c.start, end: c.end, phase: c.phase, status: c.status,
     billing: c.billing, contractValue: c.contractValue, buildUrl: c.buildUrl,
     opportunity: c.opportunity, assignments: c.assignments,
     risks: c.risks, needs: c.needs, findings: c.findings, links: c.links,

@@ -1,8 +1,23 @@
 import { pgTable, uuid, text, integer, jsonb, timestamp, boolean } from "drizzle-orm/pg-core";
 import type { Assignment, StepInstance } from "@/lib/types";
 
+// NAMING (historical): the `clients` table below is actually the ENGAGEMENT /
+// PROJECT (the unit of work — one 5D process). The `accounts` table is the
+// CLIENT / company that groups projects. UI labels: account → "Client",
+// clients row → "Project". A client (account) can have many projects.
+export const accounts = pgTable("accounts", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  driveFolderId: text("drive_folder_id").notNull().default(""),
+  slackInternal: text("slack_internal").notNull().default(""),
+  slackExternal: text("slack_external").notNull().default(""),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 export const clients = pgTable("clients", {
   id: uuid("id").defaultRandom().primaryKey(),
+  accountId: uuid("account_id"), // → accounts.id (the grouping client/company)
   name: text("name").notNull(),
   summary: text("summary").notNull().default(""),
   start: text("start").notNull().default(""),
