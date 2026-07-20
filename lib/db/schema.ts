@@ -71,3 +71,13 @@ export const messages = pgTable("messages", {
   role: text("role").notNull(),   // "user" | "assistant"
   content: text("content").notNull(),
 });
+
+// Connected third-party integrations. One row per provider (e.g. "google").
+// Holds the long-lived refresh token; access tokens are fetched on demand.
+export const integrations = pgTable("integrations", {
+  provider: text("provider").primaryKey(), // "google"
+  refreshToken: text("refresh_token").notNull(),
+  email: text("email").notNull().default(""),
+  scope: text("scope").notNull().default(""),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
