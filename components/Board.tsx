@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Board as BoardT } from "@/lib/types";
+import type { Board as BoardT, Activity } from "@/lib/types";
 import { BRAND, ALL_STEPS } from "@/lib/process";
 import { saveStep } from "@/lib/actions";
 import { TimelineOverview } from "@/components/TimelineOverview";
@@ -11,13 +11,15 @@ import { ClientEditor } from "@/components/ClientEditor";
 import { StepEditor } from "@/components/StepEditor";
 import { OppEditor } from "@/components/OppEditor";
 import { Chip } from "@/components/ui";
+import { Assistant } from "@/components/Assistant";
 
-export function Board({ initial }: { initial: BoardT }) {
+export function Board({ initial, activity = [] }: { initial: BoardT; activity?: Activity[] }) {
   const router = useRouter();
   const [view, setView] = useState<"client" | "resource">("client");
   const [editingClient, setEditingClient] = useState<string | null>(null); // id | "new" | null
   const [stepEdit, setStepEdit] = useState<{ clientId: string; stepId: string } | null>(null);
   const [editingOpp, setEditingOpp] = useState<string | null>(null); // id | "new" | null
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const { clients, opportunities } = initial;
 
   const atRisk = clients.filter((c) => c.status === "At Risk" || c.status === "Blocked").length;
@@ -64,6 +66,14 @@ export function Board({ initial }: { initial: BoardT }) {
               title="Pull the latest board from the database"
             >
               Refresh
+            </button>
+            <button
+              onClick={() => setAssistantOpen(true)}
+              className="px-3 py-1.5 rounded-md text-xs font-semibold"
+              style={{ background: BRAND.red, color: "#fff" }}
+              title="Open the assistant"
+            >
+              Assistant
             </button>
           </div>
         </div>
@@ -219,6 +229,8 @@ export function Board({ initial }: { initial: BoardT }) {
           />
         );
       })()}
+
+      <Assistant open={assistantOpen} onClose={() => setAssistantOpen(false)} activity={activity} />
     </div>
   );
 }

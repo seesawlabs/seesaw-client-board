@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, integer, jsonb, timestamp, boolean } from "drizzle-orm/pg-core";
 import type { Assignment, StepInstance } from "@/lib/types";
 
 export const clients = pgTable("clients", {
@@ -34,4 +34,25 @@ export const opportunities = pgTable("opportunities", {
   expertiseAsk: text("expertise_ask").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const activity = pgTable("activity", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  turnId: text("turn_id").notNull(),
+  actor: text("actor").notNull().default("agent"), // "agent" | "user"
+  tool: text("tool").notNull(),                     // e.g. "setStep", "upsertClient", "undo"
+  summary: text("summary").notNull(),               // human string for the feed
+  entity: text("entity").notNull(),                 // "client" | "opportunity"
+  entityId: uuid("entity_id"),                      // affected row id (null before a create resolves)
+  beforeImage: jsonb("before_image"),               // full prior row, or null for a create
+  undone: boolean("undone").notNull().default(false),
+});
+
+export const messages = pgTable("messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  turnId: text("turn_id").notNull(),
+  role: text("role").notNull(),   // "user" | "assistant"
+  content: text("content").notNull(),
 });

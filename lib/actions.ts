@@ -4,7 +4,8 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { clients, opportunities } from "@/lib/db/schema";
 import { normalizeClient } from "@/lib/process";
-import type { Board, Client, Opportunity, StepInstance } from "@/lib/types";
+import { listActivity, undoActivity, undoTurn } from "@/lib/assistant/activity";
+import type { Activity, Board, Client, Opportunity, StepInstance } from "@/lib/types";
 
 export async function getBoard(): Promise<Board> {
   const [cRows, oRows] = await Promise.all([db.select().from(clients), db.select().from(opportunities)]);
@@ -19,7 +20,7 @@ export async function getBoard(): Promise<Board> {
   return { clients: cs, opportunities: os };
 }
 
-export async function upsertClient(input: Partial<Client>): Promise<void> {
+export async function upsertClient(input: Partial<Client>): Promise<string> {
   const c = normalizeClient(input);
   const row = {
     name: c.name, summary: c.summary, start: c.start, end: c.end, phase: c.phase, status: c.status,
@@ -29,9 +30,16 @@ export async function upsertClient(input: Partial<Client>): Promise<void> {
     entryPoint: c.entryPoint, updatedAt: new Date(),
   };
   const existing = input.id ? await db.select({ id: clients.id }).from(clients).where(eq(clients.id, input.id)) : [];
-  if (existing.length) await db.update(clients).set(row).where(eq(clients.id, input.id!));
-  else await db.insert(clients).values({ ...row, process: c.process });
+  let id: string;
+  if (existing.length) {
+    await db.update(clients).set(row).where(eq(clients.id, input.id!));
+    id = input.id!;
+  } else {
+    const [ins] = await db.insert(clients).values({ ...row, process: c.process }).returning({ id: clients.id });
+    id = ins.id;
+  }
   revalidatePath("/");
+  return id;
 }
 
 export async function deleteClient(id: string): Promise<void> {
@@ -48,18 +56,39 @@ export async function saveStep(clientId: string, stepId: string, patch: Partial<
   revalidatePath("/");
 }
 
-export async function upsertOpportunity(input: Partial<Opportunity>): Promise<void> {
+export async function upsertOpportunity(input: Partial<Opportunity>): Promise<string> {
   const row = {
     name: input.name || "", industry: input.industry || "", stage: input.stage || "Lead",
     contact: input.contact || "", notes: input.notes || "", expertiseAsk: input.expertiseAsk || "", updatedAt: new Date(),
   };
   const existing = input.id ? await db.select({ id: opportunities.id }).from(opportunities).where(eq(opportunities.id, input.id)) : [];
-  if (existing.length) await db.update(opportunities).set(row).where(eq(opportunities.id, input.id!));
-  else await db.insert(opportunities).values(row);
+  let id: string;
+  if (existing.length) {
+    await db.update(opportunities).set(row).where(eq(opportunities.id, input.id!));
+    id = input.id!;
+  } else {
+    const [ins] = await db.insert(opportunities).values(row).returning({ id: opportunities.id });
+    id = ins.id;
+  }
   revalidatePath("/");
+  return id;
 }
 
 export async function deleteOpportunity(id: string): Promise<void> {
   await db.delete(opportunities).where(eq(opportunities.id, id));
+  revalidatePath("/");
+}
+
+export async function listActivityAction(): Promise<Activity[]> {
+  return listActivity();
+}
+
+export async function undoActivityAction(id: string): Promise<void> {
+  await undoActivity(id);
+  revalidatePath("/");
+}
+
+export async function undoTurnAction(turnId: string): Promise<void> {
+  await undoTurn(turnId);
   revalidatePath("/");
 }
