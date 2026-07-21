@@ -5,7 +5,7 @@ import { revalidatePath as _revalidatePath } from "next/cache";
 function revalidatePath(path: string) {
   try { _revalidatePath(path); } catch { /* not in a request context */ }
 }
-import { eq } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accounts, clients, opportunities, settings } from "@/lib/db/schema";
 import { normalizeClient } from "@/lib/process";
@@ -172,11 +172,31 @@ export async function setSetting(key: string, value: string): Promise<void> {
 }
 
 export async function saveStep(clientId: string, stepId: string, patch: Partial<StepInstance>): Promise<void> {
-  const [row] = await db.select().from(clients).where(eq(clients.id, clientId));
-  if (!row) return;
-  const process = { ...(row.process as Record<string, StepInstance>) };
-  process[stepId] = { ...process[stepId], ...patch } as StepInstance;
-  await db.update(clients).set({ process, updatedAt: new Date() }).where(eq(clients.id, clientId));
+  // Atomic JSONB merge in a single row-locked UPDATE. This is critical: the
+  // ingest agent often fires several setStep calls in parallel on the same
+  // client, and a read-modify-write in JS would let them clobber each other
+  // (lost updates). Merging in SQL — process || {stepId: (existing || patch)} —
+  // serializes correctly and never drops a concurrent step.
+  const patchJson = JSON.stringify(patch);
+  await db.update(clients).set({
+    process: sql`COALESCE(${clients.process}, '{}'::jsonb) || jsonb_build_object(
+      ${stepId}::text,
+      COALESCE(${clients.process} -> ${stepId}, '{"status":"todo","note":"","decisions":[]}'::jsonb) || ${patchJson}::jsonb
+    )`,
+    updatedAt: new Date(),
+  }).where(eq(clients.id, clientId));
+  revalidatePath("/");
+}
+
+// Atomically append one item to a list column (risks/needs/findings) unless it's
+// already present. Single UPDATE — safe under the same parallel-tool-call race
+// that setStep faced; no read-modify-write, so concurrent appends never clobber.
+export async function appendListItem(clientId: string, kind: "risks" | "needs" | "findings", text: string): Promise<void> {
+  const col = kind === "risks" ? clients.risks : kind === "needs" ? clients.needs : clients.findings;
+  const arr = JSON.stringify([text]);
+  await db.update(clients)
+    .set({ [kind]: sql`COALESCE(${col}, '[]'::jsonb) || ${arr}::jsonb`, updatedAt: new Date() } as Record<string, unknown>)
+    .where(and(eq(clients.id, clientId), sql`NOT (COALESCE(${col}, '[]'::jsonb) @> ${arr}::jsonb)`));
   revalidatePath("/");
 }
 

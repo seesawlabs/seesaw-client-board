@@ -131,7 +131,7 @@ export function normalizeClient(c: Partial<Client> & { name?: string }): Client 
     summary: c.summary || "",
     start: c.start || "",
     end: c.end || "",
-    phase: c.phase || "Discover",
+    phase: derivePhase(process), // always derived from step progress, never the stored value
     status: c.status || "On Track",
     billing: c.billing || "billable",
     opportunity: {
@@ -160,6 +160,32 @@ export function normalizeClient(c: Partial<Client> & { name?: string }): Client 
     slackExternal: c.slackExternal || "",
     updatedAt: c.updatedAt || Date.now(),
   };
+}
+
+// Derive the current 5D phase from actual step progress, so the phase label can
+// never drift from the work. Rule: the furthest phase that has completed work
+// (done/validated); if that phase is fully complete, advance to the next
+// incomplete one. If nothing is complete yet, the first phase with active work.
+export function derivePhase(process: Record<string, StepInstance>): string {
+  const isDone = (id: string) => { const s = process?.[id]?.status; return s === "done" || s === "validated"; };
+  const phaseComplete = (p: (typeof PROCESS)[number]) => {
+    let appl = 0, comp = 0;
+    for (const s of p.steps) {
+      const st = process?.[s.id]?.status || "todo";
+      if (st === "skipped" || st === "na") continue;
+      appl++;
+      if (STATUS_META[st]?.complete) comp++;
+    }
+    return appl === 0 ? true : comp === appl;
+  };
+  let idx = -1;
+  PROCESS.forEach((p, i) => { if (p.steps.some((s) => isDone(s.id))) idx = i; });
+  if (idx === -1) {
+    const d = PROCESS.findIndex((p) => p.steps.some((s) => process?.[s.id]?.status === "doing"));
+    return PROCESS[d === -1 ? 0 : d].label;
+  }
+  while (idx < PROCESS.length - 1 && phaseComplete(PROCESS[idx])) idx++;
+  return PROCESS[idx].label;
 }
 
 export function phaseRollup(client: Client, phaseKey: string) {

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { upsertClient, deleteClient } from "@/lib/actions";
-import { BILLING, OPP_TYPES, LOAD, ALL_STEPS, PHASES, STATUS, BRAND } from "@/lib/process";
+import { BILLING, OPP_TYPES, LOAD, ALL_STEPS, STATUS, BRAND } from "@/lib/process";
 import { Field, inputCls, inputStyle } from "./ui";
 import type { Client, Load } from "@/lib/types";
 
@@ -125,10 +125,10 @@ export function ClientEditor({
         <Field label="End date">
           <input type="date" className={inputCls} style={inputStyle} value={f.end} onChange={set("end")} />
         </Field>
-        <Field label="5D phase">
-          <select className={inputCls} style={inputStyle} value={f.phase} onChange={set("phase")}>
-            {PHASES.map((p) => <option key={p}>{p}</option>)}
-          </select>
+        <Field label="5D phase (auto)">
+          <div className="text-sm py-2 px-1" style={{ color: "#66707F" }} title="Phase is derived from step progress — advance steps to move the phase">
+            <b style={{ color: "#152238" }}>{f.phase}</b> · derived from step progress
+          </div>
         </Field>
         <Field label="Status">
           <select className={inputCls} style={inputStyle} value={f.status} onChange={set("status")}>

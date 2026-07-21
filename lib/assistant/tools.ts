@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { getBoard, upsertClient, saveStep, deleteClient, upsertOpportunity, setListField } from "@/lib/actions";
+import { getBoard, upsertClient, saveStep, deleteClient, upsertOpportunity, appendListItem } from "@/lib/actions";
 import { snapshotClient, snapshotOpportunity, recordActivity } from "./activity";
 import { resolveClient } from "./resolve";
 import { driveSearch, readById } from "@/lib/google";
@@ -75,7 +75,8 @@ export function buildTools(turnId: string) {
         const cur = (before as unknown as Record<string, unknown>)[kind];
         const list: string[] = Array.isArray(cur) ? (cur as string[]) : [];
         if (list.some((x) => x.trim().toLowerCase() === text.trim().toLowerCase())) return "ok: already present";
-        await setListField(clientId, kind, [...list, text]);
+        // atomic append — safe when several addListItem calls run in parallel
+        await appendListItem(clientId, kind, text);
         await recordActivity({
           turnId, actor: "agent", tool: "addListItem", entity: "client", entityId: clientId, beforeImage: before,
           summary: `Added ${kind.slice(0, -1)} to ${(before as { name?: string }).name ?? "client"}: ${text.slice(0, 60)}`,
