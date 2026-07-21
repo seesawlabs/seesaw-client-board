@@ -155,6 +155,9 @@ export function normalizeClient(c: Partial<Client> & { name?: string }): Client 
       : [],
     entryPoint,
     process,
+    driveFolderId: c.driveFolderId || "",
+    slackInternal: c.slackInternal || "",
+    slackExternal: c.slackExternal || "",
     updatedAt: c.updatedAt || Date.now(),
   };
 }

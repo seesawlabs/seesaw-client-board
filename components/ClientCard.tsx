@@ -4,6 +4,7 @@ import { BRAND, STATUS, BILLING, OPP_TYPES, contractLabel, clientProgress, skipp
 import type { Client } from "@/lib/types";
 import { Chip, PhaseTracker, TimeBar, ListBlock, useMounted } from "@/components/ui";
 import { ProcessSection } from "@/components/ProcessSection";
+import { ProjectSourcesEditor } from "@/components/ProjectSourcesEditor";
 
 export function ClientCard({
   client: c,
@@ -15,10 +16,12 @@ export function ClientCard({
   onStep: (stepId: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [srcOpen, setSrcOpen] = useState(false);
   const mounted = useMounted();
   const st = STATUS[c.status] || STATUS["On Track"];
   const progress = clientProgress(c);
   const flagCount = (c.risks?.length || 0) + (c.needs?.length || 0) + (c.findings?.length || 0);
+  const ownSources = !!(c.driveFolderId || c.slackInternal || c.slackExternal);
 
   return (
     <div
@@ -103,10 +106,18 @@ export function ClientCard({
           <button onClick={onEdit} className="text-sm font-medium" style={{ color: "#66707F" }}>
             Edit
           </button>
+          <button onClick={() => setSrcOpen((v) => !v)} className="text-sm font-medium inline-flex items-center gap-1.5" style={{ color: "#66707F" }} title="This project's own Drive folder / Slack channels">
+            Sources
+            {ownSources && <span style={{ color: BRAND.blue, fontSize: 9 }}>●</span>}
+          </button>
           <span className="ml-auto text-[11px]" style={{ color: "#8A93A3" }} suppressHydrationWarning>
             {mounted && c.updatedAt ? `Updated ${new Date(c.updatedAt).toLocaleDateString()}` : ""}
           </span>
         </div>
+
+        {srcOpen && (
+          <ProjectSourcesEditor client={c} onSaved={() => setSrcOpen(false)} onCancel={() => setSrcOpen(false)} />
+        )}
 
         {open && (
           <div className="mt-4 pt-4 border-t" style={{ borderColor: "#EDF0F4" }}>

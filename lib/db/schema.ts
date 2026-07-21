@@ -35,7 +35,18 @@ export const clients = pgTable("clients", {
   links: jsonb("links").$type<{ label: string; url: string }[]>().notNull().default([]),
   entryPoint: jsonb("entry_point").$type<{ mode: "greenfield" | "mid-build"; atStep: string | null }>().notNull().default({ mode: "greenfield", atStep: null }),
   process: jsonb("process").$type<Record<string, StepInstance>>().notNull().default({}),
+  // Optional per-project source overrides; blank = inherit the account's.
+  driveFolderId: text("drive_folder_id").notNull().default(""),
+  slackInternal: text("slack_internal").notNull().default(""),
+  slackExternal: text("slack_external").notNull().default(""),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Board-wide key/value settings (e.g. the global internal-standup folder id).
+export const settings = pgTable("settings", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull().default(""),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 

@@ -7,7 +7,7 @@ function revalidatePath(path: string) {
 }
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { accounts, clients, opportunities } from "@/lib/db/schema";
+import { accounts, clients, opportunities, settings } from "@/lib/db/schema";
 import { normalizeClient } from "@/lib/process";
 import { listActivity, undoActivity, undoTurn } from "@/lib/assistant/activity";
 import { getConnection, disconnectGoogle, googleConfigured } from "@/lib/google";
@@ -28,8 +28,12 @@ export async function ingestStandupsAction(): Promise<{ ok: boolean; docs: numbe
 }
 export async function getSlackStatus(): Promise<{ configured: boolean; accountsWired: number }> {
   const configured = slackConfigured();
-  const aRows = await db.select({ i: accounts.slackInternal, e: accounts.slackExternal }).from(accounts);
-  const accountsWired = aRows.filter((a) => a.i || a.e).length;
+  const [aRows, cRows] = await Promise.all([
+    db.select({ i: accounts.slackInternal, e: accounts.slackExternal }).from(accounts),
+    db.select({ i: clients.slackInternal, e: clients.slackExternal }).from(clients),
+  ]);
+  // count every source-set (account-level + project-level) that has a channel
+  const accountsWired = aRows.filter((a) => a.i || a.e).length + cRows.filter((c) => c.i || c.e).length;
   return { configured, accountsWired };
 }
 
@@ -113,7 +117,9 @@ export async function upsertClient(input: Partial<Client>): Promise<string> {
     billing: c.billing, contractValue: c.contractValue, buildUrl: c.buildUrl,
     opportunity: c.opportunity, assignments: c.assignments,
     risks: c.risks, needs: c.needs, findings: c.findings, links: c.links,
-    entryPoint: c.entryPoint, updatedAt: new Date(),
+    entryPoint: c.entryPoint,
+    driveFolderId: c.driveFolderId, slackInternal: c.slackInternal, slackExternal: c.slackExternal,
+    updatedAt: new Date(),
   };
   const existing = input.id ? await db.select({ id: clients.id }).from(clients).where(eq(clients.id, input.id)) : [];
   let id: string;
@@ -136,6 +142,32 @@ export async function deleteClient(id: string): Promise<void> {
 // Set a single list column (risks/needs/findings) without touching other fields.
 export async function setListField(clientId: string, kind: "risks" | "needs" | "findings", items: string[]): Promise<void> {
   await db.update(clients).set({ [kind]: items, updatedAt: new Date() }).where(eq(clients.id, clientId));
+  revalidatePath("/");
+}
+
+// Set a project's own source fields (Drive folder + Slack channels) without
+// touching anything else — safe targeted update, unlike upsertClient.
+export async function setProjectSources(
+  clientId: string,
+  src: { driveFolderId: string; slackInternal: string; slackExternal: string },
+): Promise<void> {
+  await db.update(clients).set({
+    driveFolderId: src.driveFolderId.trim(),
+    slackInternal: src.slackInternal.trim(),
+    slackExternal: src.slackExternal.trim(),
+    updatedAt: new Date(),
+  }).where(eq(clients.id, clientId));
+  revalidatePath("/");
+}
+
+export async function getSetting(key: string): Promise<string> {
+  const [row] = await db.select({ v: settings.value }).from(settings).where(eq(settings.key, key));
+  return row?.v || "";
+}
+
+export async function setSetting(key: string, value: string): Promise<void> {
+  await db.insert(settings).values({ key, value: value.trim(), updatedAt: new Date() })
+    .onConflictDoUpdate({ target: settings.key, set: { value: value.trim(), updatedAt: new Date() } });
   revalidatePath("/");
 }
 

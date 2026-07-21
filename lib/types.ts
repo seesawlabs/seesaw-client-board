@@ -28,6 +28,8 @@ export interface Client {
   links: { label: string; url: string }[];
   entryPoint: { mode: "greenfield" | "mid-build"; atStep: string | null };
   process: Record<string, StepInstance>;
+  // Optional per-PROJECT sources; when blank the project inherits its account's.
+  driveFolderId: string; slackInternal: string; slackExternal: string;
   updatedAt?: number;
 }
 export interface Board { accounts: Account[]; clients: Client[]; opportunities: Opportunity[] }
