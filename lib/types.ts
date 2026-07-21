@@ -30,6 +30,7 @@ export interface Client {
   process: Record<string, StepInstance>;
   // Optional per-PROJECT sources; when blank the project inherits its account's.
   driveFolderId: string; slackInternal: string; slackExternal: string;
+  githubRepo: string; // "owner/repo"
   updatedAt?: number;
 }
 export interface Board { accounts: Account[]; clients: Client[]; opportunities: Opportunity[] }

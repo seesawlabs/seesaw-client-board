@@ -1,17 +1,19 @@
 "use client";
 import { useState } from "react";
 import { BRAND, STATUS, BILLING, OPP_TYPES, contractLabel, clientProgress, skippedItems } from "@/lib/process";
-import type { Client } from "@/lib/types";
+import type { Account, Client } from "@/lib/types";
 import { Chip, PhaseTracker, TimeBar, ListBlock, useMounted } from "@/components/ui";
 import { ProcessSection } from "@/components/ProcessSection";
 import { ProjectSourcesEditor } from "@/components/ProjectSourcesEditor";
 
 export function ClientCard({
   client: c,
+  account,
   onEdit,
   onStep,
 }: {
   client: Client;
+  account?: Account | null;
   onEdit: () => void;
   onStep: (stepId: string) => void;
 }) {
@@ -116,7 +118,7 @@ export function ClientCard({
         </div>
 
         {srcOpen && (
-          <ProjectSourcesEditor client={c} onSaved={() => setSrcOpen(false)} onCancel={() => setSrcOpen(false)} />
+          <ProjectSourcesEditor client={c} account={account} onSaved={() => setSrcOpen(false)} onCancel={() => setSrcOpen(false)} />
         )}
 
         {open && (

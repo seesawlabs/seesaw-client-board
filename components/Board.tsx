@@ -139,11 +139,11 @@ export function Board({
             </div>
           )}
           {(() => {
-            const renderRow = (c: (typeof clients)[number]) =>
+            const renderRow = (c: (typeof clients)[number], account: (typeof accounts)[number] | null = null) =>
               editingClient === c.id ? (
                 <ClientEditor key={c.id} initial={c} onSaved={() => { setEditingClient(null); router.refresh(); }} onCancel={() => setEditingClient(null)} />
               ) : (
-                <ClientCard key={c.id} client={c} onEdit={() => setEditingClient(c.id)} onStep={(stepId) => setStepEdit({ clientId: c.id, stepId })} />
+                <ClientCard key={c.id} client={c} account={account} onEdit={() => setEditingClient(c.id)} onStep={(stepId) => setStepEdit({ clientId: c.id, stepId })} />
               );
             const byAccount = new Map<string, typeof clients>();
             const ungrouped: typeof clients = [];
@@ -181,7 +181,7 @@ export function Board({
                           onCancel={() => setEditingAccount(null)}
                         />
                       )}
-                      <div className="space-y-4">{projects.map(renderRow)}</div>
+                      <div className="space-y-4">{projects.map((c) => renderRow(c, a))}</div>
                     </div>
                   );
                 })}
@@ -192,7 +192,7 @@ export function Board({
                         <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 19, color: "#A7A399" }}>Unassigned</h3>
                       </div>
                     )}
-                    <div className="space-y-4">{ungrouped.map(renderRow)}</div>
+                    <div className="space-y-4">{ungrouped.map((c) => renderRow(c))}</div>
                   </div>
                 )}
               </>

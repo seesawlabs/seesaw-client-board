@@ -39,7 +39,16 @@ export const clients = pgTable("clients", {
   driveFolderId: text("drive_folder_id").notNull().default(""),
   slackInternal: text("slack_internal").notNull().default(""),
   slackExternal: text("slack_external").notNull().default(""),
+  githubRepo: text("github_repo").notNull().default(""), // "owner/repo"
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Per-repo GitHub sync cursor: the ISO timestamp we last ingested up to, so each
+// run only pulls PRs/issues updated since then.
+export const githubCursors = pgTable("github_cursors", {
+  repo: text("repo").primaryKey(), // "owner/repo"
+  lastSync: text("last_sync").notNull().default(""), // ISO 8601
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
