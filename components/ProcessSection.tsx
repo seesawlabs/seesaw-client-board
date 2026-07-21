@@ -35,9 +35,10 @@ export function ProcessSection({ client, onStep }: { client: Client; onStep: (st
       {/* ── phase spine ── */}
       <div className="grid grid-cols-5 gap-2 mb-5">
         {rollups.map(({ phase, r }, i) => {
-          const complete = r.complete;
+          const naPhase = r.applicable === 0; // every step skipped/na → not applicable
+          const complete = r.complete && !naPhase;
           const cur = i === curIdx;
-          const frac = r.applicable > 0 ? r.done / r.applicable : 1;
+          const frac = naPhase ? 0 : r.applicable > 0 ? r.done / r.applicable : 1;
           return (
             <div key={phase.key}>
               <div className="rounded-full overflow-hidden" style={{ height: 5, background: LINE2 }}>
@@ -45,7 +46,7 @@ export function ProcessSection({ client, onStep }: { client: Client; onStep: (st
               </div>
               <div className="flex items-baseline justify-between mt-1.5">
                 <span className="text-[10px] uppercase tracking-[0.14em] font-bold" style={{ color: complete ? GOOD : cur ? BRAND.navy : FAINT }}>{phase.label}</span>
-                <span className="text-[10px] font-semibold" style={{ color: FAINT }}>{r.done}/{r.applicable}</span>
+                <span className="text-[10px] font-semibold" style={{ color: FAINT }}>{naPhase ? "n/a" : `${r.done}/${r.applicable}`}</span>
               </div>
             </div>
           );
@@ -76,17 +77,18 @@ export function ProcessSection({ client, onStep }: { client: Client; onStep: (st
       {/* ── phase accordions ── */}
       <div>
         {rollups.map(({ phase, r }, i) => {
-          const complete = r.complete;
+          const naPhase = r.applicable === 0;
+          const complete = r.complete && !naPhase;
           const cur = i === curIdx;
           const isOpen = !!open[phase.key];
-          const state = complete ? "Complete" : cur ? "Current" : "Not started";
-          const stateColor = complete ? GOOD : cur ? BRAND.blue : FAINT;
+          const state = naPhase ? "N/A" : complete ? "Complete" : cur ? "Current" : "Not started";
+          const stateColor = naPhase ? FAINT : complete ? GOOD : cur ? BRAND.blue : FAINT;
           return (
             <div key={phase.key} style={{ borderTop: i === 0 ? "none" : `1px solid ${LINE2}` }}>
               <button onClick={() => toggle(phase.key)} className="w-full flex items-center gap-3 py-3 text-left">
                 <span className="text-[10px] w-3 flex-shrink-0" style={{ color: FAINT, transform: isOpen ? "rotate(90deg)" : "none", transition: "transform .15s" }}>▶</span>
                 <span className="text-[11px] uppercase tracking-[0.16em] font-bold" style={{ color: complete ? GOOD : cur ? BRAND.navy : FAINT }}>{phase.label}</span>
-                <span className="text-[12px] font-semibold" style={{ color: MUTED }}>{r.done}/{r.applicable}{r.skipped ? ` · ${r.skipped} skipped` : ""}{r.na ? ` · ${r.na} n/a` : ""}</span>
+                <span className="text-[12px] font-semibold" style={{ color: MUTED }}>{naPhase ? "" : `${r.done}/${r.applicable}`}{r.skipped ? `${naPhase ? "" : " · "}${r.skipped} skipped` : ""}{r.na ? `${r.skipped ? " · " : naPhase ? "" : " · "}${r.na} n/a` : ""}</span>
                 <span className="ml-auto text-[10px] uppercase tracking-wider font-bold" style={{ color: stateColor }}>{state}</span>
               </button>
               {isOpen && (

@@ -74,20 +74,20 @@ export function TimelineOverview({
           </div>
         </div>
 
-        {/* rows */}
-        <div className="relative">
-          {/* month gridlines behind rows */}
+        {/* rows — top padding leaves a clean band for the Today label above the bars */}
+        <div className="relative" style={{ paddingTop: 16 }}>
+          {/* month gridlines + today marker behind rows */}
           <div className="absolute inset-0 flex pointer-events-none">
             <div style={{ width: LABEL_W }} className="flex-shrink-0" />
             <div className="relative flex-1">
               {months.map((m, i) => (
-                <div key={i} className="absolute top-0 bottom-0" style={{ left: `${pct(m.getTime())}%`, borderLeft: "1px solid #F0F2F6" }} />
+                <div key={i} className="absolute" style={{ top: 16, bottom: 0, left: `${pct(m.getTime())}%`, borderLeft: "1px solid #F0F2F6" }} />
               ))}
               {showToday && (
                 <div className="absolute top-0 bottom-0" style={{ left: `${pct(now)}%`, borderLeft: `2px solid ${BRAND.red}` }}>
                   <div
-                    className="absolute -top-0.5 text-[9px] font-bold uppercase tracking-wider px-1 rounded-sm"
-                    style={{ background: BRAND.red, color: "#fff", transform: "translateX(-50%)" }}
+                    className="absolute top-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-px rounded-full whitespace-nowrap"
+                    style={{ background: BRAND.red, color: "#fff", transform: "translate(-50%, -1px)" }}
                   >
                     Today
                   </div>

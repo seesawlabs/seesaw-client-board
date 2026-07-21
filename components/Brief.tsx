@@ -44,7 +44,8 @@ export function Brief({ accounts, clients, activity }: { accounts: Account[]; cl
   const acctName = new Map(accounts.map((a) => [a.id, a.name]));
   const nameOf = (c: Client) => (c.accountId && acctName.has(c.accountId) ? `${acctName.get(c.accountId)} · ${c.name}` : c.name);
   const needs = buildNeeds(clients, nameOf);
-  const recent = activity.filter((a) => a.tool !== "undo" && !a.undone).slice(0, 4);
+  const recent = activity.filter((a) => a.tool !== "undo" && !a.undone).slice(0, 12);
+  const wired = activity.length > 0;
   const attention = needs.filter((n) => n.sev === "crit" || n.sev === "warn").length;
   const onTrack = clients.length - attention;
   const dateStr = mounted ? new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }) : "";
@@ -66,7 +67,7 @@ export function Brief({ accounts, clients, activity }: { accounts: Account[]; cl
                 {onTrack > 0 ? <>; the other {onTrack} {onTrack === 1 ? "is" : "are"} moving.</> : "."}
               </>
             : <>All {clients.length} {clients.length === 1 ? "engagement is" : "engagements are"} on track — nothing on fire.</>}
-        <span style={{ color: FAINT }}> Once your Slack + standups are wired in, this becomes a real chief-of-staff briefing.</span>
+        {wired && <span style={{ color: FAINT }}> Synthesized from your standups + Slack.</span>}
       </p>
 
       {needs.length > 0 && (
@@ -89,9 +90,16 @@ export function Brief({ accounts, clients, activity }: { accounts: Account[]; cl
       )}
 
       {recent.length > 0 && (
-        <div className="mt-6">
-          <div className="text-[11px] uppercase tracking-[0.2em] font-bold mb-2" style={{ color: FAINT }}>Recently · applied for you</div>
-          <div className="space-y-1.5">
+        <details className="mt-6 group">
+          <summary
+            className="flex items-center gap-2 cursor-pointer list-none select-none text-[11px] uppercase tracking-[0.2em] font-bold"
+            style={{ color: FAINT }}
+          >
+            <span className="transition-transform group-open:rotate-90" style={{ fontSize: 9 }}>▶</span>
+            Recently applied for you
+            <span className="rounded-full px-1.5 py-px text-[10px]" style={{ background: "#EDEAE3", color: MUTED }}>{recent.length}</span>
+          </summary>
+          <div className="space-y-1.5 mt-3">
             {recent.map((a) => (
               <div key={a.id} className="flex gap-2.5 items-baseline text-[13.5px]" style={{ color: MUTED }}>
                 <span style={{ color: GOOD, fontWeight: 700 }}>✓</span>
@@ -99,7 +107,7 @@ export function Brief({ accounts, clients, activity }: { accounts: Account[]; cl
               </div>
             ))}
           </div>
-        </div>
+        </details>
       )}
     </section>
   );
