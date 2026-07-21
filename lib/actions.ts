@@ -12,6 +12,8 @@ import { normalizeClient } from "@/lib/process";
 import { listActivity, undoActivity, undoTurn } from "@/lib/assistant/activity";
 import { getConnection, disconnectGoogle, googleConfigured } from "@/lib/google";
 import { ingestAll } from "@/lib/assistant/ingest";
+import { slackConfigured } from "@/lib/slack";
+import { ingestAllSlack } from "@/lib/assistant/slack-ingest";
 
 export async function ingestStandupsAction(): Promise<{ ok: boolean; docs: number; message: string }> {
   try {
@@ -23,6 +25,24 @@ export async function ingestStandupsAction(): Promise<{ ok: boolean; docs: numbe
     return { ok: false, docs: 0, message: (e as Error).message };
   }
 }
+export async function getSlackStatus(): Promise<{ configured: boolean; accountsWired: number }> {
+  const configured = slackConfigured();
+  const aRows = await db.select({ i: accounts.slackInternal, e: accounts.slackExternal }).from(accounts);
+  const accountsWired = aRows.filter((a) => a.i || a.e).length;
+  return { configured, accountsWired };
+}
+
+export async function ingestSlackAction(): Promise<{ ok: boolean; messages: number; message: string }> {
+  try {
+    const results = await ingestAllSlack();
+    const messages = results.reduce((n, r) => n + r.messages, 0);
+    revalidatePath("/");
+    return { ok: true, messages, message: messages ? `Read ${messages} new Slack message${messages > 1 ? "s" : ""}.` : "No new Slack messages." };
+  } catch (e) {
+    return { ok: false, messages: 0, message: (e as Error).message };
+  }
+}
+
 import type { Account, Activity, Board, Client, Opportunity, StepInstance } from "@/lib/types";
 
 export async function getGoogleStatus(): Promise<{ configured: boolean; connected: boolean; email: string }> {

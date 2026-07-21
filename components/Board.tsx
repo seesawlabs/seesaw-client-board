@@ -8,6 +8,7 @@ import { TimelineOverview } from "@/components/TimelineOverview";
 import { ResourceView } from "@/components/ResourceView";
 import { ClientCard } from "@/components/ClientCard";
 import { ClientEditor } from "@/components/ClientEditor";
+import { AccountEditor } from "@/components/AccountEditor";
 import { StepEditor } from "@/components/StepEditor";
 import { OppEditor } from "@/components/OppEditor";
 import { Chip, useMounted } from "@/components/ui";
@@ -19,14 +20,17 @@ export function Board({
   initial,
   activity = [],
   google = { configured: false, connected: false, email: "" },
+  slack = { configured: false, accountsWired: 0 },
 }: {
   initial: BoardT;
   activity?: Activity[];
   google?: { configured: boolean; connected: boolean; email: string };
+  slack?: { configured: boolean; accountsWired: number };
 }) {
   const router = useRouter();
   const [view, setView] = useState<"client" | "resource">("client");
   const [editingClient, setEditingClient] = useState<string | null>(null); // id | "new" | null
+  const [editingAccount, setEditingAccount] = useState<string | null>(null); // account id | null
   const [stepEdit, setStepEdit] = useState<{ clientId: string; stepId: string } | null>(null);
   const [editingOpp, setEditingOpp] = useState<string | null>(null); // id | "new" | null
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -100,7 +104,7 @@ export function Board({
           </>
         ) : (
           <>
-        <GoogleConnect {...google} />
+        <GoogleConnect {...google} slack={slack} />
         <Brief accounts={accounts} clients={clients} activity={activity} />
         <h2 className="text-[13px] uppercase tracking-widest font-bold mb-3" style={{ color: "#A7A399" }}>
           Engagement calendar
@@ -161,7 +165,22 @@ export function Board({
                         </span>
                         {a.driveFolderId && <span className="text-[11px] font-semibold" style={{ color: "#2F7A55" }}>● Drive linked</span>}
                         {(a.slackInternal || a.slackExternal) && <span className="text-[11px] font-semibold" style={{ color: BRAND.blue }}>● Slack</span>}
+                        <button
+                          onClick={() => setEditingAccount(editingAccount === a.id ? null : a.id)}
+                          className="ml-auto text-[11px] font-semibold"
+                          style={{ color: "#8A93A3" }}
+                          title="Edit this client's Drive folder and Slack channels"
+                        >
+                          Sources
+                        </button>
                       </div>
+                      {editingAccount === a.id && (
+                        <AccountEditor
+                          initial={a}
+                          onSaved={() => { setEditingAccount(null); router.refresh(); }}
+                          onCancel={() => setEditingAccount(null)}
+                        />
+                      )}
                       <div className="space-y-4">{projects.map(renderRow)}</div>
                     </div>
                   );

@@ -80,6 +80,14 @@ export const ingestedDocs = pgTable("ingested_docs", {
   ingestedAt: timestamp("ingested_at", { withTimezone: true }).defaultNow(),
 });
 
+// Per-Slack-channel read cursor: the ts of the newest message we've already
+// ingested, so each run only pulls what's new (conversations.history oldest=).
+export const slackCursors = pgTable("slack_cursors", {
+  channelId: text("channel_id").primaryKey(),
+  lastTs: text("last_ts").notNull().default("0"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
 // Connected third-party integrations. One row per provider (e.g. "google").
 // Holds the long-lived refresh token; access tokens are fetched on demand.
 export const integrations = pgTable("integrations", {
