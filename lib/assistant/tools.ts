@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { getBoard, upsertClient, saveStep, deleteClient, upsertOpportunity } from "@/lib/actions";
+import { getBoard, upsertClient, saveStep, deleteClient, upsertOpportunity, setListField } from "@/lib/actions";
 import { snapshotClient, snapshotOpportunity, recordActivity } from "./activity";
 import { resolveClient } from "./resolve";
 import type { Client, Opportunity } from "@/lib/types";
@@ -40,6 +40,13 @@ export function buildTools(turnId: string) {
         const merged: Partial<Client> = id
           ? { ...(before as unknown as Partial<Client>), ...patch, id }
           : (patch as Partial<Client>);
+        if (id && before) {
+          const b = before as unknown as Record<string, unknown>;
+          // the agent may not reassign a project's client, nor blank its name
+          (merged as Record<string, unknown>).accountId = b.accountId ?? null;
+          const m = merged as Record<string, unknown>;
+          if (!m.name || !String(m.name).trim()) m.name = b.name;
+        }
         const savedId = await upsertClient(merged as any);
         await recordActivity({
           turnId,
@@ -51,6 +58,28 @@ export function buildTools(turnId: string) {
           summary: id ? `Updated ${(patch as any).name ?? "client"}` : `Created ${(patch as any).name}`,
         });
         return `ok: ${id ? "updated" : "created"} ${(patch as { name?: string }).name}`;
+      },
+    }),
+    addListItem: tool({
+      description:
+        "Append ONE item to a client's risks, needs, or findings list without overwriting the list. Use this for standup action items / next steps (kind: needs), a new risk, or a new finding. Prefer this over upsertClient for adding list items.",
+      inputSchema: z.object({
+        clientId: z.string(),
+        kind: z.enum(["risks", "needs", "findings"]),
+        text: z.string(),
+      }),
+      execute: async ({ clientId, kind, text }) => {
+        const before = await snapshotClient(clientId);
+        if (!before) return "error: client not found";
+        const cur = (before as unknown as Record<string, unknown>)[kind];
+        const list: string[] = Array.isArray(cur) ? (cur as string[]) : [];
+        if (list.some((x) => x.trim().toLowerCase() === text.trim().toLowerCase())) return "ok: already present";
+        await setListField(clientId, kind, [...list, text]);
+        await recordActivity({
+          turnId, actor: "agent", tool: "addListItem", entity: "client", entityId: clientId, beforeImage: before,
+          summary: `Added ${kind.slice(0, -1)} to ${(before as { name?: string }).name ?? "client"}: ${text.slice(0, 60)}`,
+        });
+        return `ok: appended to ${kind}`;
       },
     }),
     setStep: tool({

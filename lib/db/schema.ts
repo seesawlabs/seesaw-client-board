@@ -72,6 +72,14 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
 });
 
+// Docs (standup transcripts) already ingested, so we don't re-process them.
+export const ingestedDocs = pgTable("ingested_docs", {
+  docId: text("doc_id").primaryKey(),
+  accountId: uuid("account_id"),
+  title: text("title").notNull().default(""),
+  ingestedAt: timestamp("ingested_at", { withTimezone: true }).defaultNow(),
+});
+
 // Connected third-party integrations. One row per provider (e.g. "google").
 // Holds the long-lived refresh token; access tokens are fetched on demand.
 export const integrations = pgTable("integrations", {

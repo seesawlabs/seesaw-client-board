@@ -1,11 +1,28 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath as _revalidatePath } from "next/cache";
+// Safe wrapper: revalidatePath throws if called outside a request (e.g. from an
+// ingestion script/agent run). Swallow that so mutations still succeed.
+function revalidatePath(path: string) {
+  try { _revalidatePath(path); } catch { /* not in a request context */ }
+}
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { accounts, clients, opportunities } from "@/lib/db/schema";
 import { normalizeClient } from "@/lib/process";
 import { listActivity, undoActivity, undoTurn } from "@/lib/assistant/activity";
 import { getConnection, disconnectGoogle, googleConfigured } from "@/lib/google";
+import { ingestAll } from "@/lib/assistant/ingest";
+
+export async function ingestStandupsAction(): Promise<{ ok: boolean; docs: number; message: string }> {
+  try {
+    const results = await ingestAll();
+    const docs = results.reduce((n, r) => n + r.docs, 0);
+    revalidatePath("/");
+    return { ok: true, docs, message: docs ? `Ingested ${docs} new standup${docs > 1 ? "s" : ""}.` : "No new standups to ingest." };
+  } catch (e) {
+    return { ok: false, docs: 0, message: (e as Error).message };
+  }
+}
 import type { Account, Activity, Board, Client, Opportunity, StepInstance } from "@/lib/types";
 
 export async function getGoogleStatus(): Promise<{ configured: boolean; connected: boolean; email: string }> {
@@ -81,6 +98,12 @@ export async function upsertClient(input: Partial<Client>): Promise<string> {
 
 export async function deleteClient(id: string): Promise<void> {
   await db.delete(clients).where(eq(clients.id, id));
+  revalidatePath("/");
+}
+
+// Set a single list column (risks/needs/findings) without touching other fields.
+export async function setListField(clientId: string, kind: "risks" | "needs" | "findings", items: string[]): Promise<void> {
+  await db.update(clients).set({ [kind]: items, updatedAt: new Date() }).where(eq(clients.id, clientId));
   revalidatePath("/");
 }
 
