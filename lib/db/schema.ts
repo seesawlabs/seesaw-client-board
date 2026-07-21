@@ -77,6 +77,8 @@ export const ingestedDocs = pgTable("ingested_docs", {
   docId: text("doc_id").primaryKey(),
   accountId: uuid("account_id"),
   title: text("title").notNull().default(""),
+  kind: text("kind").notNull().default("standup"), // "standup" | "context"
+  modifiedTime: text("modified_time").notNull().default(""), // Drive modifiedTime we last ingested; re-read on change
   ingestedAt: timestamp("ingested_at", { withTimezone: true }).defaultNow(),
 });
 

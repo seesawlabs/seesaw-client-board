@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getBoard, upsertClient, saveStep, deleteClient, upsertOpportunity, setListField } from "@/lib/actions";
 import { snapshotClient, snapshotOpportunity, recordActivity } from "./activity";
 import { resolveClient } from "./resolve";
+import { driveSearch, readById } from "@/lib/google";
 import type { Client, Opportunity } from "@/lib/types";
 
 /**
@@ -130,6 +131,36 @@ export function buildTools(turnId: string) {
       description: "Fetch a URL the user pasted and return its readable text so you can act on it.",
       inputSchema: z.object({ url: z.string().url() }),
       execute: async ({ url }) => (await import("./link")).fetchLinkText(url),
+    }),
+    findDocs: tool({
+      description:
+        "Search the connected Google Drive for documents by name (standup notes, a spec, a SOW, etc.). Use this to answer questions about source documents — when the first/last standup was, which docs exist, dates. Returns matches sorted oldest-first with created & modified dates.",
+      inputSchema: z.object({ nameContains: z.string().describe("text the file name contains, e.g. 'Daily Standup' or 'Vision Spec'") }),
+      execute: async ({ nameContains }) => {
+        try {
+          const safe = nameContains.replace(/['\\]/g, " ");
+          const files = await driveSearch(`name contains '${safe}' and trashed=false`, 50);
+          if (!files.length) return "No matching documents found in Drive.";
+          const rows = files
+            .map((f) => ({ name: f.name, id: f.id, created: (f.createdTime || "").slice(0, 10), modified: (f.modifiedTime || "").slice(0, 10) }))
+            .sort((a, b) => a.created.localeCompare(b.created));
+          return JSON.stringify(rows);
+        } catch (e) {
+          return `error: ${(e as Error).message}`;
+        }
+      },
+    }),
+    readSource: tool({
+      description:
+        "Read the text of a Google Drive document (Google Doc, Sheet, or PDF) by its id or share URL — e.g. an id from findDocs — so you can answer questions about, or act on, its contents.",
+      inputSchema: z.object({ idOrUrl: z.string().describe("a Drive file id or share URL") }),
+      execute: async ({ idOrUrl }) => {
+        try {
+          return (await readById(idOrUrl, 16000)) || "(empty document)";
+        } catch (e) {
+          return `error: ${(e as Error).message}`;
+        }
+      },
     }),
     deleteClient: tool({
       description: "Delete a client. DESTRUCTIVE — only call with confirmed:true after the user explicitly confirms.",

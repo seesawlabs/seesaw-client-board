@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { disconnectGoogleAction, ingestStandupsAction, ingestSlackAction } from "@/lib/actions";
+import { disconnectGoogleAction, ingestStandupsAction, ingestSlackAction, ingestDocsAction } from "@/lib/actions";
 import { BRAND } from "@/lib/process";
 
 const GOOD = "#2F7A55";
@@ -46,6 +46,7 @@ export function GoogleConnect({
 }: { configured: boolean; connected: boolean; email: string; slack?: Slack }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [dbusy, setDbusy] = useState(false);
   const [sbusy, setSbusy] = useState(false);
   const [msg, setMsg] = useState("");
 
@@ -53,6 +54,11 @@ export function GoogleConnect({
     setBusy(true); setMsg("");
     const r = await ingestStandupsAction();
     setMsg(r.message); setBusy(false); router.refresh();
+  };
+  const syncDocs = async () => {
+    setDbusy(true); setMsg("");
+    const r = await ingestDocsAction();
+    setMsg(r.message); setDbusy(false); router.refresh();
   };
   const syncSlack = async () => {
     setSbusy(true); setMsg("");
@@ -68,6 +74,15 @@ export function GoogleConnect({
         <span className="rounded-full border px-3 py-1" style={{ borderColor: LINE, color: FAINT }}>Google · setup pending</span>
       ) : connected ? (
         <Pill live label="Google" actionLabel="Sync standups" busy={busy} onSync={syncGoogle} title={email ? `Connected as ${email}` : undefined}>
+          <button
+            disabled={dbusy}
+            onClick={syncDocs}
+            className="rounded-full px-2 py-0.5 text-[11.5px] font-semibold"
+            style={{ background: dbusy ? "#EDEAE3" : "#EAF1F8", color: dbusy ? "#B3AFA6" : BRAND.blue }}
+            title="Read the project spec/scope docs from the client Drive folder"
+          >
+            {dbusy ? "Reading…" : "Sync docs"}
+          </button>
           <button
             disabled={busy}
             onClick={async () => { setBusy(true); await disconnectGoogleAction(); router.refresh(); }}

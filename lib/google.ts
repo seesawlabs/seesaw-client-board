@@ -77,13 +77,13 @@ async function accessToken(): Promise<string> {
   return ((await res.json()) as TokenResp).access_token;
 }
 
-export type DriveFile = { id: string; name: string; mimeType: string; modifiedTime?: string; parents?: string[] };
+export type DriveFile = { id: string; name: string; mimeType: string; modifiedTime?: string; createdTime?: string; parents?: string[] };
 
 export async function driveSearch(query: string, pageSize = 100): Promise<DriveFile[]> {
   const token = await accessToken();
   const p = new URLSearchParams({
     q: query,
-    fields: "files(id,name,mimeType,modifiedTime,parents)",
+    fields: "files(id,name,mimeType,modifiedTime,createdTime,parents)",
     pageSize: String(pageSize),
     orderBy: "modifiedTime desc",
     supportsAllDrives: "true",
@@ -100,4 +100,65 @@ export async function readDocText(fileId: string, cap = 20000): Promise<string> 
   const res = await fetch(`${DRIVE}/files/${fileId}/export?mimeType=text/plain`, { headers: { authorization: `Bearer ${token}` } });
   if (!res.ok) throw new Error(`doc export failed: ${res.status} ${await res.text()}`);
   return (await res.text()).slice(0, cap);
+}
+
+/** Export a Google Sheet as CSV text (first/primary sheet). */
+export async function readSheetText(fileId: string, cap = 20000): Promise<string> {
+  const token = await accessToken();
+  const res = await fetch(`${DRIVE}/files/${fileId}/export?mimeType=text/csv`, { headers: { authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`sheet export failed: ${res.status} ${await res.text()}`);
+  return (await res.text()).slice(0, cap);
+}
+
+/** Download an uploaded PDF's bytes and extract its text. */
+export async function readPdfText(fileId: string, cap = 20000): Promise<string> {
+  const token = await accessToken();
+  const res = await fetch(`${DRIVE}/files/${fileId}?alt=media`, { headers: { authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`pdf download failed: ${res.status} ${await res.text()}`);
+  const data = new Uint8Array(await res.arrayBuffer());
+  const { PDFParse } = await import("pdf-parse");
+  const parser = new PDFParse({ data });
+  try {
+    const out = await parser.getText();
+    return (out.text || "").replace(/\n{3,}/g, "\n\n").slice(0, cap);
+  } catch (e) {
+    return `(could not extract PDF text: ${(e as Error).message})`;
+  } finally {
+    await parser.destroy().catch(() => {});
+  }
+}
+
+/** Read any supported Drive file as text, dispatching on mime type. */
+export async function readFileText(file: { id: string; mimeType: string }, cap = 20000): Promise<string> {
+  if (file.mimeType === "application/vnd.google-apps.document") return readDocText(file.id, cap);
+  if (file.mimeType === "application/vnd.google-apps.spreadsheet") return readSheetText(file.id, cap);
+  if (file.mimeType === "application/pdf") return readPdfText(file.id, cap);
+  return `(unsupported file type: ${file.mimeType})`;
+}
+
+export const READABLE_MIME = new Set([
+  "application/vnd.google-apps.document",
+  "application/vnd.google-apps.spreadsheet",
+  "application/pdf",
+]);
+
+/** Pull a Drive file id out of a share URL (or return the input if it's already an id). */
+export function driveIdFromUrl(s: string): string {
+  const m = s.match(/[-\w]{25,}/);
+  return m ? m[0] : s.trim();
+}
+
+export async function fileMeta(id: string): Promise<DriveFile> {
+  const token = await accessToken();
+  const p = new URLSearchParams({ fields: "id,name,mimeType,modifiedTime,createdTime", supportsAllDrives: "true" });
+  const res = await fetch(`${DRIVE}/files/${id}?${p.toString()}`, { headers: { authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`file meta failed: ${res.status} ${await res.text()}`);
+  return (await res.json()) as DriveFile;
+}
+
+/** Read a Drive doc/sheet/pdf by id or share URL, returning its text with a title header. */
+export async function readById(idOrUrl: string, cap = 20000): Promise<string> {
+  const meta = await fileMeta(driveIdFromUrl(idOrUrl));
+  const text = await readFileText(meta, cap);
+  return `# ${meta.name}\n\n${text}`;
 }

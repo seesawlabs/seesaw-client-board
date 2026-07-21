@@ -12,6 +12,7 @@ import { normalizeClient } from "@/lib/process";
 import { listActivity, undoActivity, undoTurn } from "@/lib/assistant/activity";
 import { getConnection, disconnectGoogle, googleConfigured } from "@/lib/google";
 import { ingestAll } from "@/lib/assistant/ingest";
+import { ingestAllContext } from "@/lib/assistant/context-ingest";
 import { slackConfigured } from "@/lib/slack";
 import { ingestAllSlack } from "@/lib/assistant/slack-ingest";
 
@@ -44,6 +45,17 @@ export async function ingestSlackAction(): Promise<{ ok: boolean; messages: numb
 }
 
 import type { Account, Activity, Board, Client, Opportunity, StepInstance } from "@/lib/types";
+
+export async function ingestDocsAction(): Promise<{ ok: boolean; docs: number; message: string }> {
+  try {
+    const results = await ingestAllContext();
+    const docs = results.reduce((n, r) => n + r.docs, 0);
+    revalidatePath("/");
+    return { ok: true, docs, message: docs ? `Read ${docs} project doc${docs > 1 ? "s" : ""}.` : "No new project docs to read." };
+  } catch (e) {
+    return { ok: false, docs: 0, message: (e as Error).message };
+  }
+}
 
 export async function getGoogleStatus(): Promise<{ configured: boolean; connected: boolean; email: string }> {
   const conn = await getConnection();
