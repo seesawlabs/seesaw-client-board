@@ -40,7 +40,7 @@ export function Board({
   const { accounts, clients, opportunities } = initial;
 
   const atRisk = clients.filter((c) => c.status === "At Risk" || c.status === "Blocked").length;
-  const openAsks = clients.reduce((n, c) => n + (c.needs?.length || 0), 0);
+  const dueSoon = clients.filter((c) => c.briefDeadline).length;
 
   return (
     <div className="min-h-screen" style={{ background: BRAND.paper, fontFamily: "'Archivo', system-ui, sans-serif", color: BRAND.ink }}>
@@ -66,7 +66,7 @@ export function Board({
               at risk
             </div>
             <div>
-              <span className="text-white font-semibold">{openAsks}</span> open asks
+              <span className="text-white font-semibold">{dueSoon}</span> due soon
             </div>
             <div className="flex rounded-md overflow-hidden border" style={{ borderColor: BRAND.lightBlue }}>
               {([["client", "By client"], ["resource", "By resource"]] as const).map(([id, label]) => (
