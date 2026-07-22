@@ -7,7 +7,7 @@ const proj = (o: Partial<Client>): Client => ({
   id: "p1", accountId: "a1", name: "P", summary: "", start: "", end: "", phase: "Discover", status: "On Track",
   billing: "billable", opportunity: { types: [], note: "" }, contractValue: null, buildUrl: "", assignments: [],
   risks: [], needs: [], findings: [], links: [], entryPoint: { mode: "greenfield", atStep: null }, process: {},
-  driveFolderId: "", slackInternal: "", slackExternal: "", githubRepo: "", ...o,
+  driveFolderId: "", slackInternal: "", slackExternal: "", githubRepo: "", briefProse: "", briefAttention: "", ...o,
 });
 
 describe("buildSlackUnits", () => {

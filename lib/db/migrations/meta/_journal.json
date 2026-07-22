@@ -64,6 +64,13 @@
       "when": 1784658045423,
       "tag": "0008_fair_sister_grimm",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784732478823,
+      "tag": "0009_abandoned_genesis",
+      "breakpoints": true
     }
   ]
 }

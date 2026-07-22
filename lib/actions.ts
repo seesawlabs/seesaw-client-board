@@ -17,6 +17,7 @@ import { slackConfigured } from "@/lib/slack";
 import { ingestAllSlack } from "@/lib/assistant/slack-ingest";
 import { githubConfigured } from "@/lib/github";
 import { ingestAllGithub } from "@/lib/assistant/github-ingest";
+import { synthesizeAllBriefs } from "@/lib/assistant/synthesize";
 
 export async function ingestStandupsAction(): Promise<{ ok: boolean; docs: number; message: string }> {
   try {
@@ -81,6 +82,17 @@ export async function ingestGithubAction(): Promise<{ ok: boolean; items: number
   }
 }
 
+export async function synthesizeBriefsAction(): Promise<{ ok: boolean; message: string }> {
+  try {
+    const results = await synthesizeAllBriefs();
+    const flagged = results.filter((r) => r.attention).length;
+    revalidatePath("/");
+    return { ok: true, message: `Brief refreshed for ${results.length} project${results.length === 1 ? "" : "s"}${flagged ? ` · ${flagged} need${flagged === 1 ? "s" : ""} you` : ""}.` };
+  } catch (e) {
+    return { ok: false, message: (e as Error).message };
+  }
+}
+
 export async function getGoogleStatus(): Promise<{ configured: boolean; connected: boolean; email: string }> {
   const conn = await getConnection();
   return { configured: googleConfigured(), connected: !!conn, email: conn?.email || "" };
@@ -101,7 +113,7 @@ export async function getBoard(): Promise<Board> {
     id: a.id, name: a.name, driveFolderId: a.driveFolderId, slackInternal: a.slackInternal, slackExternal: a.slackExternal,
   })) as Account[];
   const cs = cRows
-    .map((r) => normalizeClient({ ...r, updatedAt: r.updatedAt ? r.updatedAt.getTime() : undefined } as unknown as Partial<Client>))
+    .map((r) => normalizeClient({ ...r, updatedAt: r.updatedAt ? r.updatedAt.getTime() : undefined, briefAt: r.briefAt ? r.briefAt.getTime() : undefined } as unknown as Partial<Client>))
     .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   const os = oRows.map((o) => ({
     id: o.id, name: o.name, industry: o.industry, stage: o.stage,

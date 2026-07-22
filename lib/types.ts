@@ -31,6 +31,8 @@ export interface Client {
   // Optional per-PROJECT sources; when blank the project inherits its account's.
   driveFolderId: string; slackInternal: string; slackExternal: string;
   githubRepo: string; // "owner/repo"
+  // Nightly-synthesized morning brief.
+  briefProse: string; briefAttention: string; briefAt?: number;
   updatedAt?: number;
 }
 export interface Board { accounts: Account[]; clients: Client[]; opportunities: Opportunity[] }
