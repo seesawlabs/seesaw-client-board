@@ -16,7 +16,7 @@ export function ResourceView({ clients }: { clients: Client[] }) {
       {rows.map((r) => (
         <div key={r.name} className="rounded-lg border bg-white p-5" style={{ borderColor: r.over ? BRAND.red : "#E2E6ED" }}>
           <div className="flex items-center justify-between">
-            <h3 className="text-lg" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>{r.name}</h3>
+            <h3 className="text-lg" style={{ fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif", fontWeight: 700, color: BRAND.navy }}>{r.name}</h3>
             <span className="text-xs font-semibold" style={{ color: r.over ? BRAND.red : "#66707F" }}>
               {r.over ? `⚠ Stacked · load ${r.weight}` : `Load ${r.weight}/${CAPACITY}`}
             </span>

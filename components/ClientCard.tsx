@@ -35,17 +35,26 @@ export function ClientCard({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-xl" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
+              <h3 className="text-xl" style={{ fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif", fontWeight: 700, color: BRAND.navy }}>
                 {c.name}
               </h3>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold" style={{ background: st.bg, color: st.color }}>
                 {c.status}
               </span>
             </div>
-            {c.summary && (
-              <p className="text-sm mt-1" style={{ color: "#4A5568" }}>
-                {c.summary}
-              </p>
+            {c.briefProse?.trim() ? (
+              <div className="mt-1.5">
+                <div className="text-[10px] uppercase tracking-[0.16em] font-bold mb-0.5" style={{ color: "#A7A399" }} suppressHydrationWarning>
+                  Brief{mounted && c.briefAt ? ` · ${new Date(c.briefAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}` : ""}
+                </div>
+                <p className="text-[14px] leading-snug" style={{ color: "#3A4658" }}>{c.briefProse}</p>
+              </div>
+            ) : (
+              c.summary && (
+                <p className="text-sm mt-1" style={{ color: "#4A5568" }}>
+                  {c.summary}
+                </p>
+              )
             )}
             <div className="mt-2">
               {c.assignments.map((a, i) => (

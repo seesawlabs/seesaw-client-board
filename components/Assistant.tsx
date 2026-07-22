@@ -38,7 +38,7 @@ export function Assistant({
       style={{ borderLeft: `4px solid ${BRAND.navy}` }}
     >
       <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: "#E2E6ED" }}>
-        <span className="font-semibold" style={{ color: BRAND.navy, fontFamily: "'Fraunces',serif" }}>
+        <span className="font-semibold" style={{ color: BRAND.navy, fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif" }}>
           Assistant
         </span>
         <button onClick={onClose} style={{ color: "#66707F" }}>

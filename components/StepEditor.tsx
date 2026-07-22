@@ -48,7 +48,7 @@ export function StepEditor({
         <div className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: "#8A93A3" }}>
           {step.phaseLabel}
         </div>
-        <h3 className="text-lg mb-3" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
+        <h3 className="text-lg mb-3" style={{ fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif", fontWeight: 700, color: BRAND.navy }}>
           {step.label}
         </h3>
 

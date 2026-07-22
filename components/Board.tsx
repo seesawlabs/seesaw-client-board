@@ -51,7 +51,7 @@ export function Board({
             <div className="text-[11px] uppercase tracking-[0.25em] font-semibold" style={{ color: BRAND.lightBlue }}>
               SeeSaw Labs
             </div>
-            <h1 className="text-3xl md:text-4xl text-white" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700 }}>
+            <h1 className="text-3xl md:text-4xl text-white" style={{ fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif", fontWeight: 700 }}>
               Standup board
             </h1>
           </div>
@@ -99,7 +99,7 @@ export function Board({
       <main className="max-w-5xl mx-auto px-6 md:px-10 py-8">
         {view === "resource" ? (
           <>
-            <h2 className="text-2xl mb-4" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
+            <h2 className="text-2xl mb-4" style={{ fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif", fontWeight: 700, color: BRAND.navy }}>
               Team allocation
             </h2>
             <ResourceView clients={clients} />
@@ -114,7 +114,7 @@ export function Board({
         <TimelineOverview clients={clients} />
 
         <div className="flex items-baseline justify-between mb-4 mt-8">
-          <h2 className="text-2xl" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
+          <h2 className="text-2xl" style={{ fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif", fontWeight: 700, color: BRAND.navy }}>
             Clients &amp; projects
           </h2>
           <button
@@ -161,7 +161,7 @@ export function Board({
                   return (
                     <div key={a.id} className="mb-9">
                       <div className="flex items-baseline gap-3 mb-3 pb-2" style={{ borderBottom: "1px solid #E6E1D7" }}>
-                        <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 19, color: BRAND.navy }}>{a.name}</h3>
+                        <h3 style={{ fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif", fontWeight: 700, fontSize: 19, color: BRAND.navy }}>{a.name}</h3>
                         <span className="text-[11px] uppercase tracking-[0.16em] font-bold" style={{ color: "#A7A399" }}>
                           {projects.length} project{projects.length === 1 ? "" : "s"}
                         </span>
@@ -191,7 +191,7 @@ export function Board({
                   <div className="mb-9">
                     {grouped.length > 0 && (
                       <div className="flex items-baseline gap-3 mb-3 pb-2" style={{ borderBottom: "1px solid #E6E1D7" }}>
-                        <h3 style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, fontSize: 19, color: "#A7A399" }}>Unassigned</h3>
+                        <h3 style={{ fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif", fontWeight: 700, fontSize: 19, color: "#A7A399" }}>Unassigned</h3>
                       </div>
                     )}
                     <div className="space-y-4">{ungrouped.map((c) => renderRow(c))}</div>
@@ -202,7 +202,7 @@ export function Board({
           })()}
         </div>
         <div className="flex items-baseline justify-between mb-1">
-          <h2 className="text-2xl" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
+          <h2 className="text-2xl" style={{ fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif", fontWeight: 700, color: BRAND.navy }}>
             Potential new opportunities
           </h2>
           <button
@@ -244,7 +244,7 @@ export function Board({
             ) : (
               <div key={o.id} className="rounded-lg border bg-white p-5" style={{ borderColor: "#E2E6ED" }}>
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-lg" style={{ fontFamily: "'Fraunces', serif", fontWeight: 700, color: BRAND.navy }}>
+                  <h3 className="text-lg" style={{ fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif", fontWeight: 700, color: BRAND.navy }}>
                     {o.name}
                   </h3>
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold flex-shrink-0" style={{ background: "#EEF1F6", color: BRAND.navy }}>

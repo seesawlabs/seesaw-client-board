@@ -10,10 +10,10 @@ const MODEL = "anthropic/claude-sonnet-5";
 
 const BriefSchema = z.object({
   prose: z.string().describe(
-    "2-3 sentences for a morning read-in. Lead with what shipped or changed RECENTLY, then where the project stands, then the single watch-item. Trajectory, not a status dump. No bullet lists.",
+    "EXACTLY 2-3 sentences, ~55 words max, for a morning read-in. Lead with what shipped or changed RECENTLY, then where it stands, then the single watch-item. Trajectory, not a status dump. Tight and concrete — no bullet lists, no preamble, do not restate the project's name or what it is.",
   ),
   attention: z.string().describe(
-    "ONE sentence naming the single thing that needs a human DECISION or NUDGE today — a real blocker, a client dependency, a call to make. Empty string if nothing genuinely needs attention today. Do NOT put routine 'review PR' tasks here.",
+    "ONE sentence (~30 words) naming the single thing that needs a human DECISION or NUDGE today — a real blocker, a client dependency, a call to make. Empty string if nothing genuinely needs attention today. Do NOT put routine 'review PR' tasks here.",
   ),
 });
 
@@ -41,7 +41,7 @@ export async function synthesizeProjectBrief(project: Client, recent: { summary:
   const system = [
     "You write the morning brief for a SeeSaw Labs client project — read by a busy founder who wants to get oriented in seconds and only act where it matters.",
     "From the project's state and recent changes, produce a 'prose' trajectory (2-3 sentences) and an 'attention' line (the one thing needing a human today, or empty).",
-    "Be specific and concrete — name the actual work, the actual blocker. Prefer the substance from risks/findings/recent changes over generic phase language. Never invent. If the project is quietly on track, prose says so plainly and attention is empty.",
+    "Be specific and concrete — name the actual work, the actual blocker. Prefer the substance from risks/findings/recent changes over generic phase language. Keep prose to 2-3 sentences; brevity matters, this is scanned across many projects. Never invent. If the project is quietly on track, prose says so plainly and attention is empty.",
   ].join(" ");
   const { object } = await generateObject({
     model: MODEL,

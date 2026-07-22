@@ -9,7 +9,6 @@ import type { Account, Client, Activity } from "@/lib/types";
 const FAINT = "#A7A399";
 const MUTED = "#7C7A73";
 const LINE = "#E6E1D7";
-const GOOD = "#2F7A55";
 
 // severity of a project for ordering the exceptions, worst first
 function sev(c: Client): number {
@@ -55,7 +54,7 @@ export function Brief({ accounts, clients, activity }: { accounts: Account[]; cl
         </button>
       </div>
 
-      <h1 className="mt-2" style={{ fontFamily: "'Fraunces', serif", fontWeight: 400, fontSize: 30, lineHeight: 1.12, color: BRAND.navy, letterSpacing: "-0.015em" }}>
+      <h1 className="mt-2" style={{ fontFamily: "'Bricolage Grotesque', 'Archivo', sans-serif", fontWeight: 400, fontSize: 30, lineHeight: 1.12, color: BRAND.navy, letterSpacing: "-0.015em" }}>
         Good morning.
       </h1>
       <p className="mt-2 text-[15px]" style={{ color: MUTED, maxWidth: "62ch" }}>
@@ -90,32 +89,6 @@ export function Brief({ accounts, clients, activity }: { accounts: Account[]; cl
         </div>
       )}
 
-      {/* ── portfolio: a 2-3 sentence trajectory per project ── */}
-      {clients.length > 0 && (
-        <div className="mt-6">
-          <div className="text-[11px] uppercase tracking-[0.2em] font-bold mb-2.5" style={{ color: FAINT }}>Portfolio</div>
-          <div className="divide-y" style={{ borderColor: LINE }}>
-            {clients.map((c) => {
-              const st = STATUS[c.status] || STATUS["On Track"];
-              return (
-                <div key={c.id} className="py-3 flex gap-3" style={{ borderColor: LINE }}>
-                  <span className="mt-1.5 flex-shrink-0 rounded-full" style={{ width: 9, height: 9, background: st.color }} />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-2 flex-wrap">
-                      <span className="font-semibold text-[14.5px]" style={{ color: BRAND.navy }}>{nameOf(c)}</span>
-                      <span className="text-[11px]" style={{ color: FAINT }}>{c.phase} · {c.status}</span>
-                      <a href={`#client-${c.id}`} className="text-[11px] font-semibold ml-auto" style={{ color: BRAND.blue }}>dig in ▸</a>
-                    </div>
-                    <p className="text-[13.5px] mt-0.5" style={{ color: MUTED }}>
-                      {c.briefProse?.trim() || <span style={{ color: FAINT }}>{c.summary || "No brief yet — regenerate to synthesize."}</span>}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
     </section>
   );
 }
