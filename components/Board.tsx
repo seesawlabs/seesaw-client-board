@@ -22,12 +22,14 @@ export function Board({
   google = { configured: false, connected: false, email: "" },
   slack = { configured: false, accountsWired: 0 },
   github = { configured: false, reposWired: 0 },
+  userMenu,
 }: {
   initial: BoardT;
   activity?: Activity[];
   google?: { configured: boolean; connected: boolean; email: string };
   slack?: { configured: boolean; accountsWired: number };
   github?: { configured: boolean; reposWired: number };
+  userMenu?: React.ReactNode;
 }) {
   const router = useRouter();
   const [view, setView] = useState<"client" | "resource">("client");
@@ -92,6 +94,7 @@ export function Board({
             >
               Assistant
             </button>
+            {userMenu}
           </div>
         </div>
       </header>
