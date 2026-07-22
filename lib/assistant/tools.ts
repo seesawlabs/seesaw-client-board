@@ -4,6 +4,7 @@ import { getBoard, upsertClient, saveStep, deleteClient, upsertOpportunity, appe
 import { snapshotClient, snapshotOpportunity, recordActivity } from "./activity";
 import { resolveClient } from "./resolve";
 import { driveSearch, readById } from "@/lib/google";
+import { parseRepo, listPulls, listIssues, renderGithubDigest, githubConfigured } from "@/lib/github";
 import type { Client, Opportunity } from "@/lib/types";
 
 /**
@@ -158,6 +159,22 @@ export function buildTools(turnId: string) {
       execute: async ({ idOrUrl }) => {
         try {
           return (await readById(idOrUrl, 16000)) || "(empty document)";
+        } catch (e) {
+          return `error: ${(e as Error).message}`;
+        }
+      },
+    }),
+    githubActivity: tool({
+      description:
+        "List recent pull requests and issues for a GitHub repo (owner/repo) so you can answer questions about what's open, merged, in review, or where work stands. Get the repo from a project's githubRepo via queryBoard.",
+      inputSchema: z.object({ repo: z.string().describe("owner/repo, e.g. seesawlabs/topminnow-etl") }),
+      execute: async ({ repo }) => {
+        if (!githubConfigured()) return "error: GitHub not connected";
+        const parsed = parseRepo(repo);
+        if (!parsed) return `error: "${repo}" is not a valid owner/repo`;
+        try {
+          const [pulls, issues] = await Promise.all([listPulls(parsed), listIssues(parsed)]);
+          return renderGithubDigest(pulls, issues);
         } catch (e) {
           return `error: ${(e as Error).message}`;
         }

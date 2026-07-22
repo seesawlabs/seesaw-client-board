@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { disconnectGoogleAction, ingestStandupsAction, ingestSlackAction, ingestDocsAction } from "@/lib/actions";
+import { disconnectGoogleAction, ingestStandupsAction, ingestSlackAction, ingestDocsAction, ingestGithubAction } from "@/lib/actions";
 import { BRAND } from "@/lib/process";
 
 const GOOD = "#2F7A55";
@@ -9,6 +9,7 @@ const FAINT = "#A7A399";
 const LINE = "#E6E1D7";
 
 type Slack = { configured: boolean; accountsWired: number };
+type Github = { configured: boolean; reposWired: number };
 
 // One compact "source" pill: status dot + label + a subtle inline Sync action.
 function Pill({
@@ -42,12 +43,13 @@ function Pill({
 }
 
 export function GoogleConnect({
-  configured, connected, email, slack = { configured: false, accountsWired: 0 },
-}: { configured: boolean; connected: boolean; email: string; slack?: Slack }) {
+  configured, connected, email, slack = { configured: false, accountsWired: 0 }, github = { configured: false, reposWired: 0 },
+}: { configured: boolean; connected: boolean; email: string; slack?: Slack; github?: Github }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [dbusy, setDbusy] = useState(false);
   const [sbusy, setSbusy] = useState(false);
+  const [gbusy, setGbusy] = useState(false);
   const [msg, setMsg] = useState("");
 
   const syncGoogle = async () => {
@@ -64,6 +66,11 @@ export function GoogleConnect({
     setSbusy(true); setMsg("");
     const r = await ingestSlackAction();
     setMsg(r.message); setSbusy(false); router.refresh();
+  };
+  const syncGithub = async () => {
+    setGbusy(true); setMsg("");
+    const r = await ingestGithubAction();
+    setMsg(r.message); setGbusy(false); router.refresh();
   };
 
   return (
@@ -111,6 +118,21 @@ export function GoogleConnect({
           disabled={slack.accountsWired === 0}
           onSync={syncSlack}
           title={slack.accountsWired === 0 ? "Set a client's channel IDs first (Sources on a client header)" : undefined}
+        />
+      )}
+
+      {!github.configured ? (
+        <span className="rounded-full border px-3 py-1" style={{ borderColor: LINE, color: FAINT }}>GitHub · setup pending</span>
+      ) : (
+        <Pill
+          live
+          label="GitHub"
+          sub={`${github.reposWired} repo${github.reposWired === 1 ? "" : "s"}`}
+          actionLabel="Sync GitHub"
+          busy={gbusy}
+          disabled={github.reposWired === 0}
+          onSync={syncGithub}
+          title={github.reposWired === 0 ? "Set a project's GitHub repo first (Sources on a project card)" : undefined}
         />
       )}
 

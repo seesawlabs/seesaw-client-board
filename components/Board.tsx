@@ -21,11 +21,13 @@ export function Board({
   activity = [],
   google = { configured: false, connected: false, email: "" },
   slack = { configured: false, accountsWired: 0 },
+  github = { configured: false, reposWired: 0 },
 }: {
   initial: BoardT;
   activity?: Activity[];
   google?: { configured: boolean; connected: boolean; email: string };
   slack?: { configured: boolean; accountsWired: number };
+  github?: { configured: boolean; reposWired: number };
 }) {
   const router = useRouter();
   const [view, setView] = useState<"client" | "resource">("client");
@@ -104,7 +106,7 @@ export function Board({
           </>
         ) : (
           <>
-        <GoogleConnect {...google} slack={slack} />
+        <GoogleConnect {...google} slack={slack} github={github} />
         <Brief accounts={accounts} clients={clients} activity={activity} />
         <h2 className="text-[13px] uppercase tracking-widest font-bold mb-3" style={{ color: "#A7A399" }}>
           Engagement calendar

@@ -15,6 +15,8 @@ import { ingestAll } from "@/lib/assistant/ingest";
 import { ingestAllContext } from "@/lib/assistant/context-ingest";
 import { slackConfigured } from "@/lib/slack";
 import { ingestAllSlack } from "@/lib/assistant/slack-ingest";
+import { githubConfigured } from "@/lib/github";
+import { ingestAllGithub } from "@/lib/assistant/github-ingest";
 
 export async function ingestStandupsAction(): Promise<{ ok: boolean; docs: number; message: string }> {
   try {
@@ -58,6 +60,24 @@ export async function ingestDocsAction(): Promise<{ ok: boolean; docs: number; m
     return { ok: true, docs, message: docs ? `Read ${docs} project doc${docs > 1 ? "s" : ""}.` : "No new project docs to read." };
   } catch (e) {
     return { ok: false, docs: 0, message: (e as Error).message };
+  }
+}
+
+export async function getGithubStatus(): Promise<{ configured: boolean; reposWired: number }> {
+  const configured = githubConfigured();
+  const rows = await db.select({ r: clients.githubRepo }).from(clients);
+  const reposWired = rows.filter((r) => r.r).length;
+  return { configured, reposWired };
+}
+
+export async function ingestGithubAction(): Promise<{ ok: boolean; items: number; message: string }> {
+  try {
+    const results = await ingestAllGithub();
+    const items = results.reduce((n, r) => n + r.items, 0);
+    revalidatePath("/");
+    return { ok: true, items, message: items ? `Read ${items} PR/issue update${items > 1 ? "s" : ""}.` : "No new GitHub activity." };
+  } catch (e) {
+    return { ok: false, items: 0, message: (e as Error).message };
   }
 }
 
@@ -118,7 +138,7 @@ export async function upsertClient(input: Partial<Client>): Promise<string> {
     opportunity: c.opportunity, assignments: c.assignments,
     risks: c.risks, needs: c.needs, findings: c.findings, links: c.links,
     entryPoint: c.entryPoint,
-    driveFolderId: c.driveFolderId, slackInternal: c.slackInternal, slackExternal: c.slackExternal,
+    driveFolderId: c.driveFolderId, slackInternal: c.slackInternal, slackExternal: c.slackExternal, githubRepo: c.githubRepo,
     updatedAt: new Date(),
   };
   const existing = input.id ? await db.select({ id: clients.id }).from(clients).where(eq(clients.id, input.id)) : [];
@@ -149,12 +169,13 @@ export async function setListField(clientId: string, kind: "risks" | "needs" | "
 // touching anything else — safe targeted update, unlike upsertClient.
 export async function setProjectSources(
   clientId: string,
-  src: { driveFolderId: string; slackInternal: string; slackExternal: string },
+  src: { driveFolderId: string; slackInternal: string; slackExternal: string; githubRepo: string },
 ): Promise<void> {
   await db.update(clients).set({
     driveFolderId: src.driveFolderId.trim(),
     slackInternal: src.slackInternal.trim(),
     slackExternal: src.slackExternal.trim(),
+    githubRepo: src.githubRepo.trim(),
     updatedAt: new Date(),
   }).where(eq(clients.id, clientId));
   revalidatePath("/");

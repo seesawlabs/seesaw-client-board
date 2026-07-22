@@ -23,6 +23,7 @@ export function ProjectSourcesEditor({
     driveFolderId: client.driveFolderId || "",
     slackInternal: client.slackInternal || "",
     slackExternal: client.slackExternal || "",
+    githubRepo: client.githubRepo || "",
   });
   const [busy, setBusy] = useState(false);
   const router = useRouter();
@@ -75,6 +76,11 @@ export function ProjectSourcesEditor({
           </Field>
           {!f.slackExternal && <div className="text-[11px] mt-0.5 mb-1" style={{ color: "#8A93A3" }}>{inherited(acc?.slackExternal || "")}</div>}
         </div>
+      </div>
+      <div className="mt-1">
+        <Field label="GitHub repo (owner/repo)">
+          <input className={inputCls} style={inputStyle} value={f.githubRepo} onChange={set("githubRepo")} placeholder="seesawlabs/topminnow-etl" />
+        </Field>
       </div>
       <div className="flex items-center gap-3 mt-2">
         <button onClick={submit} disabled={busy} className="px-4 py-2 rounded-md text-sm font-semibold text-white" style={{ background: BRAND.navy, opacity: busy ? 0.6 : 1 }}>
