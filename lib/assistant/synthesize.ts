@@ -10,10 +10,13 @@ const MODEL = "anthropic/claude-sonnet-5";
 
 const BriefSchema = z.object({
   prose: z.string().describe(
-    "EXACTLY 2-3 sentences, ~55 words max, for a morning read-in. Lead with what shipped or changed RECENTLY, then where it stands, then the single watch-item. Trajectory, not a status dump. Tight and concrete — no bullet lists, no preamble, do not restate the project's name or what it is.",
+    "EXACTLY 2-3 sentences, ~55 words max, for a morning read-in. Lead with what shipped or changed RECENTLY, then where it stands, then the single watch-item — fold any urgency (a looming risk, a client dependency, a decision to make) into this. Trajectory, not a status dump. Tight and concrete — no bullet lists, no preamble, do not restate the project's name or what it is.",
   ),
-  attention: z.string().describe(
-    "ONE sentence (~30 words) naming the single thing that needs a human DECISION or NUDGE today — a real blocker, a client dependency, a call to make. Empty string if nothing genuinely needs attention today. Do NOT put routine 'review PR' tasks here.",
+  deadlineDate: z.string().describe(
+    "The single NEAREST hard, DATED commitment for this project as an absolute date YYYY-MM-DD — a SOW milestone, a scheduled client demo/call, or the engagement end. Resolve relative references ('Thursday', 'end of week') against today's date, given below. Empty string if there is no meaningful dated deadline in the next ~2 weeks.",
+  ),
+  deadlineLabel: z.string().describe(
+    "A short name for that deadline (e.g. 'Milestone 2 — tenant isolation + monitoring' or 'Client demo'). Empty string if deadlineDate is empty.",
   ),
 });
 
@@ -37,11 +40,16 @@ function projectContext(project: Client, recent: { summary: string; when: string
   ].filter(Boolean).join("\n\n");
 }
 
-export async function synthesizeProjectBrief(project: Client, recent: { summary: string; when: string }[]): Promise<{ prose: string; attention: string }> {
+export async function synthesizeProjectBrief(
+  project: Client,
+  recent: { summary: string; when: string }[],
+  today: string,
+): Promise<{ prose: string; deadlineDate: string; deadlineLabel: string }> {
   const system = [
-    "You write the morning brief for a SeeSaw Labs client project — read by a busy founder who wants to get oriented in seconds and only act where it matters.",
-    "From the project's state and recent changes, produce a 'prose' trajectory (2-3 sentences) and an 'attention' line (the one thing needing a human today, or empty).",
-    "Be specific and concrete — name the actual work, the actual blocker. Prefer the substance from risks/findings/recent changes over generic phase language. Keep prose to 2-3 sentences; brevity matters, this is scanned across many projects. Never invent. If the project is quietly on track, prose says so plainly and attention is empty.",
+    "You write the morning brief for a SeeSaw Labs client project on a SHARED company board (not personal — never address 'you').",
+    "Produce a 'prose' trajectory (2-3 sentences, urgency folded in) and, separately, the single nearest hard DATED deadline (deadlineDate + deadlineLabel), if one exists.",
+    "Be specific and concrete — name the actual work, the actual blocker. Prefer the substance from risks/findings/recent changes over generic phase language. Keep prose to 2-3 sentences; brevity matters, this is scanned across many projects. Never invent a date — only surface a deadline the sources actually support.",
+    `Today is ${today}.`,
   ].join(" ");
   const { object } = await generateObject({
     model: MODEL,
@@ -49,21 +57,23 @@ export async function synthesizeProjectBrief(project: Client, recent: { summary:
     system,
     prompt: projectContext(project, recent),
   });
-  return { prose: object.prose.trim(), attention: object.attention.trim() };
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(object.deadlineDate.trim()) ? object.deadlineDate.trim() : "";
+  return { prose: object.prose.trim(), deadlineDate: date, deadlineLabel: date ? object.deadlineLabel.trim() : "" };
 }
 
 /** Regenerate the stored brief for every project. Returns count synthesized. */
-export async function synthesizeAllBriefs(): Promise<{ project: string; attention: boolean }[]> {
+export async function synthesizeAllBriefs(): Promise<{ project: string; deadline: boolean }[]> {
+  const today = new Date().toISOString().slice(0, 10);
   const cRows = await db.select().from(clients);
-  const results: { project: string; attention: boolean }[] = [];
+  const results: { project: string; deadline: boolean }[] = [];
   for (const r of cRows) {
     const project = normalizeClient({ ...r, updatedAt: r.updatedAt ? r.updatedAt.getTime() : undefined } as unknown as Partial<Client>);
     const acts = await db.select({ summary: activity.summary, createdAt: activity.createdAt })
       .from(activity).where(eq(activity.entityId, r.id)).orderBy(desc(activity.createdAt)).limit(20);
     const recent = acts.map((a) => ({ summary: a.summary, when: a.createdAt ? a.createdAt.toISOString().slice(0, 10) : "" }));
-    const { prose, attention } = await synthesizeProjectBrief(project, recent);
-    await db.update(clients).set({ briefProse: prose, briefAttention: attention, briefAt: new Date() }).where(eq(clients.id, r.id));
-    results.push({ project: project.name, attention: !!attention });
+    const { prose, deadlineDate, deadlineLabel } = await synthesizeProjectBrief(project, recent, today);
+    await db.update(clients).set({ briefProse: prose, briefDeadline: deadlineDate, briefDeadlineLabel: deadlineLabel, briefAt: new Date() }).where(eq(clients.id, r.id));
+    results.push({ project: project.name, deadline: !!deadlineDate });
   }
   return results;
 }

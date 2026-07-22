@@ -41,9 +41,10 @@ export const clients = pgTable("clients", {
   slackExternal: text("slack_external").notNull().default(""),
   githubRepo: text("github_repo").notNull().default(""), // "owner/repo"
   // Nightly-synthesized morning brief for this project.
-  briefProse: text("brief_prose").notNull().default(""),     // 2-3 sentence trajectory
-  briefAttention: text("brief_attention").notNull().default(""), // the one needs-you line, or ""
-  briefAt: timestamp("brief_at", { withTimezone: true }),      // when it was generated
+  briefProse: text("brief_prose").notNull().default(""),        // 2-3 sentence trajectory (carries urgency)
+  briefDeadline: text("brief_deadline").notNull().default(""),  // next hard dated commitment, YYYY-MM-DD or ""
+  briefDeadlineLabel: text("brief_deadline_label").notNull().default(""), // short name for that deadline
+  briefAt: timestamp("brief_at", { withTimezone: true }),        // when it was generated
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });

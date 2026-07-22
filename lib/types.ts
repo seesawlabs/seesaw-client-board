@@ -32,7 +32,7 @@ export interface Client {
   driveFolderId: string; slackInternal: string; slackExternal: string;
   githubRepo: string; // "owner/repo"
   // Nightly-synthesized morning brief.
-  briefProse: string; briefAttention: string; briefAt?: number;
+  briefProse: string; briefDeadline: string; briefDeadlineLabel: string; briefAt?: number;
   updatedAt?: number;
 }
 export interface Board { accounts: Account[]; clients: Client[]; opportunities: Opportunity[] }

@@ -85,9 +85,9 @@ export async function ingestGithubAction(): Promise<{ ok: boolean; items: number
 export async function synthesizeBriefsAction(): Promise<{ ok: boolean; message: string }> {
   try {
     const results = await synthesizeAllBriefs();
-    const flagged = results.filter((r) => r.attention).length;
+    const due = results.filter((r) => r.deadline).length;
     revalidatePath("/");
-    return { ok: true, message: `Brief refreshed for ${results.length} project${results.length === 1 ? "" : "s"}${flagged ? ` · ${flagged} need${flagged === 1 ? "s" : ""} you` : ""}.` };
+    return { ok: true, message: `Brief refreshed for ${results.length} project${results.length === 1 ? "" : "s"}${due ? ` · ${due} with a deadline` : ""}.` };
   } catch (e) {
     return { ok: false, message: (e as Error).message };
   }

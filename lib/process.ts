@@ -160,7 +160,8 @@ export function normalizeClient(c: Partial<Client> & { name?: string }): Client 
     slackExternal: c.slackExternal || "",
     githubRepo: c.githubRepo || "",
     briefProse: c.briefProse || "",
-    briefAttention: c.briefAttention || "",
+    briefDeadline: c.briefDeadline || "",
+    briefDeadlineLabel: c.briefDeadlineLabel || "",
     briefAt: c.briefAt,
     updatedAt: c.updatedAt || Date.now(),
   };
