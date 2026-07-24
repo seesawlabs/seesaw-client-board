@@ -1,5 +1,6 @@
 # AGENTS.md
 
+**Current state & handoff (start here):** [`docs/HANDOFF.md`](docs/HANDOFF.md)
 **Product spec (source of truth):** [`docs/PRODUCT_SPEC.md`](docs/PRODUCT_SPEC.md)
 **Architecture decisions:** [`docs/adr/`](docs/adr/)
 
